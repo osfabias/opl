@@ -1,5 +1,5 @@
 # OPL
-C library for managing windows, input and audio.
+C library for managing windows (or surfaces on mobile and console platforms), input and audio.
 
 ## FAQ
 ### What means OPL?
