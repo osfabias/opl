@@ -1,17 +1,18 @@
 #include "opl/opl.h"
 
-static int s_running = 1;
+static int running = 1;
 
 void onTerminateRequest() {
-  s_running = 0;
+  running = 0;
 }
 
 int main() {
   /* configure opl initialization */
   OplInitInfo initInfo;
   initInfo.pApplicationName = "OPL application";
-  initInfo.resolutionX = 1280;
-  initInfo.resolutionY = 720;
+  initInfo.width  = 1280;
+  initInfo.height = 720;
+  initInfo.desiredPlatform = OPL_PLATFORM_ID_ANY;
 
   /* init library */
   if (oplInit(&initInfo) != OPL_SUCCESS)
@@ -21,7 +22,7 @@ int main() {
   oplSetTerminateRequestCallback(&onTerminateRequest);
 
   /* update opl state untill terminate callback is called */
-  while (s_running) {
+  while (running) {
     oplPollEvents();
   }
 
