@@ -20,8 +20,9 @@ int main() {
 
   puts("initializing opl");
   /* init library */
-  if (oplInit(&initInfo) != OPL_SUCCESS)
-    return -1;
+  OplResult result = oplInit(&initInfo);
+  if (result != OPL_SUCCESS)
+    return result;
 
   puts("terminate request callback set");
   /* set terminate request callback */

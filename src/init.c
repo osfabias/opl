@@ -11,31 +11,32 @@ _OplState _opl = {
 
 OplResult oplInit(const OplInitInfo *pInitInfo) {
   if (_opl.initialized)
-    return OPL_TRUE;
+    return OPL_SUCCESS;
 
   memset(&_opl, 0, sizeof(_opl));
 
   OplResult result = _oplSelectPlatform(pInitInfo->desiredPlatform,
-                                        _opl.platform);
+                                        &_opl.platform);
   if (result != OPL_SUCCESS)
     return result;
 
-  _opl.platform->init(pInitInfo);
+  _opl.platform.init(pInitInfo);
 
-  return OPL_TRUE;
+  return OPL_SUCCESS;
 }
 
 void oplTerminate() {
   if (!_opl.initialized)
     return;
 
-  _opl.platform->terminate();
+  _opl.platform.terminate();
+  _opl.initialized = OPL_FALSE;
 
   memset(&_opl, 0, sizeof(_opl));
 }
 
 void oplPollEvents() {
-  _opl.platform->pollEvents();
+  _opl.platform.pollEvents();
 }
 
 void oplSetTerminateRequestCallback(OplTerminateRequestFun fun) {
