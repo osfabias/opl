@@ -2,7 +2,6 @@
 
 #include "opl/opl.h"
 #include "platform.h"
-#include "platform_cocoa.h"
 
 static const struct {
   OplPlatformID id;
