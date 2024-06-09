@@ -28,15 +28,14 @@ enum OplPlatformID {
   OPL_PLATFORM_ID_WIN32,
 };
 
-typedef struct OplInitInfo {
+struct OplInitInfo {
   const char *pApplicationName;
   int width;
   int height;
   OplPlatformID desiredPlatform;
-} OplInitInfo;
+};
 
 typedef void(*OplTerminateRequestFun)();
-
 typedef void(*OplSurfaceResizeFun)(int, int);
 typedef void(*OplSurfaceMinimizeFun)();
 typedef void(*OplSurfaceMaximizeFun)();
