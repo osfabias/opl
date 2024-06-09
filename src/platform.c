@@ -1,17 +1,17 @@
-#pragma once
-
 #include "opl/opl.h"
 #include "platform.h"
+#include "platform_cocoa.h"
 
 static const struct {
   OplPlatformID id;
-  void (*connect)(const _OplPlatform*);
+  void (*connect)(_OplPlatform*);
 } _supportedPlatforms[] = {
-  /* add platforms here */
+#ifdef _OPL_ENABLE_COCOA
+  { .id = OPL_PLATFORM_ID_COCOA, .connect = _oplConnectCocoa },
+#endif
 };
 
-OplResult _oplSelectPlatform(OplPlatformID desiredID,
-                             const _OplPlatform *pPlatform) {
+OplResult _oplSelectPlatform(OplPlatformID desiredID, _OplPlatform *pPlatform) {
   if (desiredID != OPL_PLATFORM_ID_ANY &&
       desiredID != OPL_PLATFORM_ID_COCOA &&
       desiredID != OPL_PLATFORM_ID_WIN32)
@@ -30,7 +30,6 @@ OplResult _oplSelectPlatform(OplPlatformID desiredID,
   for(int i = 0; i < platformsCount; ++i) {
     if (_supportedPlatforms[i].id == desiredID) {
       _supportedPlatforms[i].connect(pPlatform);
-      return OPL_SUCCESS;
     }
   }
 

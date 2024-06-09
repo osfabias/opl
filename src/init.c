@@ -37,3 +37,7 @@ void oplTerminate() {
 void oplPollEvents() {
   _opl.platform->pollEvents();
 }
+
+void oplSetTerminateRequestCallback(OplTerminateRequestFun fun) {
+  _opl.callbacks.terminateRequest = fun;
+}

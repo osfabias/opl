@@ -1,6 +1,7 @@
 # target setup
-file(GLOB_RECURSE OGE_FRONTED_SOURCE_FILES "frontend/*.c")
-add_library(opl ${OGE_FRONTED_SOURCE_FILES})
+add_library(opl STATIC ${OPL_SOURCE_DIR}/include/opl/opl.h
+                        internal.h init.c
+                        platform.h platform.c)
 target_include_directories(opl PUBLIC ${OPL_SOURCE_DIR}/include)
 
 if(APPLE)
