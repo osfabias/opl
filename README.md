@@ -7,7 +7,7 @@ Currently supported platforms:
 
 # How to build
 ## Requirements:
-- [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) (latest version)
+- [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)[*](https://github.com/osfabias/opl/issues/1) (latest version)
 - CMake (version 2.16)
 
 ```shell
