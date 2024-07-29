@@ -16,8 +16,8 @@ struct {
   _OplState *oplState;
 
   ApplicationDelegate *pAppDelegate;
-  WindowDelegate *pWindowDelegate;
-  NSWindow *pWindow;
+  WindowDelegate *windowDelegate;
+  NSWindow *window;
   ContentView *pView;
   CAMetalLayer *pMetalLayer;
   float deviceRatio;
@@ -271,7 +271,7 @@ static OplKey _translateKey(uint32_t keycode) {
 @end // WindowDelegate
 
 @interface ContentView : NSView <NSTextInputClient> {
-  NSWindow                  *pWindow;
+  NSWindow                  *window;
   NSTrackingArea            *pRrackingArea;
   NSMutableAttributedString *pMarkedText;
 }
@@ -285,7 +285,7 @@ static OplKey _translateKey(uint32_t keycode) {
   - (instancetype)initWithWindow:(NSWindow*)initWindow {
     self = [super init];
     if (self != nil) {
-      pWindow = initWindow;
+      window = initWindow;
     }
 
     return self;
@@ -443,7 +443,7 @@ uint8_t _oplPlatformInit(const OplInitInfo *initInfo, _OplState *oplState) {
   // causes segfault in future on ogePlatformTerminate call
 
   // Zero platform state struct
-  s_platformState.oplState = OplState;
+  s_platformState.oplState = oplState;
 
   [NSApplication sharedApplication];
 
@@ -455,18 +455,18 @@ uint8_t _oplPlatformInit(const OplInitInfo *initInfo, _OplState *oplState) {
   [NSApp setDelegate:s_platformState.pAppDelegate];
 
   // Window delegate creation
-  s_platformState.pWindowDelegate = [[WindowDelegate alloc] init];
-  if (!s_platformState.pWindowDelegate) {
+  s_platformState.windowDelegate = [[WindowDelegate alloc] init];
+  if (!s_platformState.windowDelegate) {
     return OPL_FALSE;
   }
 
   // Window creation
-  s_platformState.pWindow = [[NSWindow alloc]
+  s_platformState.window = [[NSWindow alloc]
       initWithContentRect:NSMakeRect(
         0,
         0,
-        pInitInfo->surfaceWidth,
-        pInitInfo->surfaceHeight)
+        initInfo->surfaceWidth,
+        initInfo->surfaceHeight)
       styleMask:
         NSWindowStyleMaskTitled | 
         NSWindowStyleMaskClosable |
@@ -476,26 +476,26 @@ uint8_t _oplPlatformInit(const OplInitInfo *initInfo, _OplState *oplState) {
       defer: NO
     ];
 
-  if (!s_platformState.pWindow) {
+  if (!s_platformState.window) {
     return OPL_FALSE;
   }
 
   // View creation
   s_platformState.pView =
-    [[ContentView alloc] initWithWindow:s_platformState.pWindow];
+    [[ContentView alloc] initWithWindow:s_platformState.window];
   [s_platformState.pView setWantsLayer:YES];
 
   // Layer creation
   s_platformState.pMetalLayer = [CAMetalLayer layer];
 
   // Setting window properties
-  [s_platformState.pWindow setLevel:NSNormalWindowLevel];
-  [s_platformState.pWindow setContentView:s_platformState.pView];
-  [s_platformState.pWindow makeFirstResponder:s_platformState.pView];
-  [s_platformState.pWindow setTitle:@(pInitInfo->pApplicationName)];
-  [s_platformState.pWindow setDelegate:s_platformState.pWindowDelegate];
-  [s_platformState.pWindow setAcceptsMouseMovedEvents:YES];
-  [s_platformState.pWindow setRestorable:NO];
+  [s_platformState.window setLevel:NSNormalWindowLevel];
+  [s_platformState.window setContentView:s_platformState.pView];
+  [s_platformState.window makeFirstResponder:s_platformState.pView];
+  [s_platformState.window setTitle:@(initInfo->applicationName)];
+  [s_platformState.window setDelegate:s_platformState.windowDelegate];
+  [s_platformState.window setAcceptsMouseMovedEvents:YES];
+  [s_platformState.window setRestorable:NO];
 
   if (![[NSRunningApplication currentApplication] isFinishedLaunching]) {
     [NSApp run];
@@ -506,7 +506,7 @@ uint8_t _oplPlatformInit(const OplInitInfo *initInfo, _OplState *oplState) {
 
   // Putting window in front on launch
   [NSApp activateIgnoringOtherApps:YES];
-  [s_platformState.pWindow makeKeyAndOrderFront:nil];
+  [s_platformState.window makeKeyAndOrderFront:nil];
 
   // Handle content scaling for various fidelity displays (i.e. Retina)
   s_platformState.pMetalLayer.bounds = s_platformState.pView.bounds;
@@ -534,16 +534,16 @@ uint8_t _oplPlatformInit(const OplInitInfo *initInfo, _OplState *oplState) {
 }
 
 void _oplPlatformTerminate() {
-  [s_platformState.pWindow orderOut:nil];
+  [s_platformState.window orderOut:nil];
 
-  [s_platformState.pWindow setDelegate:nil];
-  [s_platformState.pWindowDelegate release];
+  [s_platformState.window setDelegate:nil];
+  [s_platformState.windowDelegate release];
 
   [s_platformState.pView release];
   s_platformState.pView = nil;
 
-  [s_platformState.pWindow close];
-  s_platformState.pWindow = nil;
+  [s_platformState.window close];
+  s_platformState.window = nil;
 
   [NSApp setDelegate:nil];
   [s_platformState.pAppDelegate release];
