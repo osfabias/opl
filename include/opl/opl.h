@@ -1,24 +1,80 @@
+/**
+   * @file opl.h
+   * @brief The header of the OPL API
+   */
 #pragma once
 
-#include <stdint.h> // for const size types
+#include <stdint.h>        // for const size types
 
 #include <vulkan/vulkan.h> // for surface creation
 
 /************************************************
  *                  OPL tokens                  *
  ************************************************/
+/**
+ * @brief True.
+ */
 #define OPL_TRUE 1
+
+/**
+ * @brief False.
+ */
 #define OPL_FALSE 0
 
 /************************************************
  *                  OPL types                   *
  ************************************************/
-typedef struct OplInitInfo {
-  const char *applicationName;
-  uint16_t surfaceWidth;
-  uint16_t surfaceHeight;
-} OplInitInfo;
 
+/**
+ * @brief Window flags.
+ */
+typedef enum OplWindowStyleFlag {
+  OPL_WINDOW_STYLE_TITLED         = 1 << 0,
+  OPL_WINDOW_STYLE_CLOSABLE       = 1 << 1,
+  OPL_WINDOW_STYLE_RESIZABLE      = 1 << 2,
+  OPL_WINDOW_STYLE_BORDERLESS     = 1 << 3,
+  OPL_WINDOW_STYLE_FULLSCREEN     = 1 << 4,
+  OPL_WINDOW_STYLE_MINIATURIZABLE = 1 << 5,
+} OplWindowStyleFlag;
+
+/**
+ * @brief Window creation info.
+ *
+ * @var OplWindowCreateInfo::flags
+ * Window flags, used for enabling features.
+ *
+ * @var OplWindowCreateInfo::title
+ * String to show as a title of the window.
+ *
+ * @var OplWindowCreateInfo::x
+ * X position of the window on the display.
+ *
+ * @var OplWindowCreateInfo::y
+ * Y position of the window on the display.
+ *
+ * @var OplWindowCreateInfo::width
+ * The width of the window in pixels.
+ *
+ * @var OplWindowCreateInfo::height
+ * The height of the window in pixels.
+ */
+typedef struct OplWindowCreateInfo {
+  OplWindowStyleFlag styleFlags;
+  const char        *title;
+  uint16_t           x;
+  uint16_t           y;
+  uint16_t           width;
+  uint16_t           height;
+} OplWindowCreateInfo;
+
+/**
+ * @brief Window handle;
+ */
+typedef void* OplWindow;
+
+/**
+ * @brief Key codes.
+ */
 typedef enum OplKey {
   OPL_KEY_BACKSPACE = 0x08,
   OPL_KEY_ENTER = 0x0D,
@@ -172,10 +228,21 @@ typedef enum OplKey {
   OPL_KEY_MAX_ENUM = 0xFF
 } OplKey;
 
+/**
+ * @brief Keyboard state.
+ * @var OplKeyboardState::keys
+ * An array, that holds key states. 0 represents that the key is
+ * up, 1 represents that the key is down. The index of each
+ * element (key) corresponds to it's key code (use OplKey enum
+ * for key codes).
+ */
 typedef struct OplKeyboardState {
-  uint8_t pKeyStates[OPL_KEY_MAX_ENUM];
+  uint8_t keys[OPL_KEY_MAX_ENUM];
 } OplKeyboardState;
 
+/**
+ * @brief Mouse button codes.
+ */
 typedef enum OplMouseButton {
   OPL_MOUSE_BUTTON_LEFT,
   OPL_MOUSE_BUTTON_RIGHT,
@@ -186,13 +253,37 @@ typedef enum OplMouseButton {
   OPL_MOUSE_BUTTON_MAX_ENUM
 } OplMouseButton;
 
+/**
+ * @brief Mouse state.
+ * @var OplMouseState::buttons
+ * An array of mouse button states. 0 represents that the mouse button
+ * is up, 1 represents that the mouse button is down. The index of each
+ * element (mouse button) corresponds to it's code (use OplMouseButton
+ * enum for mouse button codes).
+ *
+ * @var OplMouseState::x
+ * X position of the cursor on the screen.
+ *
+ * @var OplMouseState::y
+ * Y position of the cursor on the screen.
+ *
+ * @var OplMouseState::wheel
+ * Wheel scroll.
+ */
 typedef struct OplMouseState {
-  uint8_t pButtonStates[OPL_MOUSE_BUTTON_MAX_ENUM];
+  uint8_t buttons[OPL_MOUSE_BUTTON_MAX_ENUM];
   uint16_t x;
   uint16_t y;
   int8_t wheel;
 } OplMouseState;
 
+/**
+ * @brief Output color for console.
+ *
+ * By the way, this library was written with the intention to
+ * use it with the OGE, so these colors here represents a very
+ * small pallete and named as the logging levels.
+ */
 typedef enum OplColor {
   OPL_COLOR_NONE,
   OPL_COLOR_TRACE,
@@ -206,20 +297,21 @@ typedef enum OplColor {
  *                    OPL API                   *
  ************************************************/
 /**
- * @brief Initializes opl.
+ * @brief Initializes OPL.
+ * @return Return OPL_TRUE on successfull initialization,
+ *         otherwise returns OPL_FALSE.
  */
-uint8_t oplInit(const OplInitInfo *pInitInfo);
+uint8_t oplInit();
 
 /**
- * @brief Terminates opl.
+ * @brief Terminates OPL.
  */
 void oplTerminate();
 
 /**
- * @brief Returns OPL_TRUE if opl terminate was requested,
- * otherwise returns OPL_FALSE.
+ * @brief Pumps platform messages.
  */
-uint8_t oplShouldTerminate();
+void oplPumpMessages();
 
 /**
  * @brief Returns a pointer to a keyboard state.
@@ -237,11 +329,113 @@ const OplKeyboardState* oplKeyboardGetState();
  */
 const OplMouseState* oplMouseGetState();
 
+/**
+ * @brief Creates a desktop window.
+ * @param createInfo A pointer to OplWindowCreateInfo struct.
+ * @return Returns an OPL window handle.
+ */
+OplWindow oplWindowCreate(const OplWindowCreateInfo *createInfo);
 
 /**
- * @brief Pumps platform messages.
+ * @brief Destroy a desktop window.
  */
-void oplPumpMessages();
+void oplWindowDestroy(OplWindow window);
+
+/**
+ * @brief Returns wheter should window close or not.
+ * @param window An OPL window handle.
+ * @return Returns OPL_TRUE if window closing was requested,
+ * otherwise returns OPL_FALSE.
+ */
+uint8_t oplWindowShouldClose(OplWindow window);
+
+/**
+ * @brief Sets window's title.
+ * @param window An OPL window handle.
+ * @param title A title to set.
+ */
+void oplWindowSetTitle(OplWindow window, const char *title);
+
+/**
+ * @brief Returns window's title.
+ * @param window An OPL window handle.
+ * @return Returns a pointer to a window title.
+ */
+const char* oplWindowGetTitle(OplWindow window);
+
+/**
+ * @brief Sets window's size.
+ * @param window An OPL window handle.
+ * @param width A width in pixels.
+ * @param height A height in pixels.
+ */
+void oplWindowSetSize(OplWindow window, uint16_t width, uint16_t height);
+
+/**
+ * @brief Returns window size.
+ * @param window An OPL window handle.
+ * @param width A pointer to a variable, that will hold a window's width.
+ * @param width A pointer to a variable, that will hold a window's height.
+ */
+void oplWindowGetSize(OplWindow window, uint16_t *width, uint16_t *height);
+
+/**
+ * @brief Sets window position.
+ * @param window An OPL window handle.
+ * @param x Window x position.
+ * @param y Window y position.
+ */
+void oplWindowSetPosition(OplWindow window, uint16_t x, uint16_t y);
+
+/**
+ * @brief Returns window position.
+ * @param window An OPL window handle.
+ * @param x A pointer to a variable, that will hold a window's x position.
+ * @param y A pointer to a variable, that will hold a window's y position.
+ */
+void oplWindowGetPosition(OplWindow window, uint16_t *x, uint16_t *y);
+
+/**
+ * @brief Minituarizes window.
+ * @param window An OPL window handle.
+ */
+void oplWindowMiniaturize(OplWindow window);
+
+/**
+ * @brief Returns wheter window is miniaturized or not.
+ * @param window An OPL window handle.
+ * @return Returns OPL_TRUE if window miniaturized or
+ *         OPL_FALSE if it's not.
+ */
+uint8_t oplWindowIsMinituarized(OplWindow window);
+
+/**
+ * @brief Maximized window.
+ * @param window An OPL window handle.
+ */
+void oplWindowMaximize(OplWindow window);
+
+/**
+ * @brief Returns wheter window is maximized or not.
+ * @param window An OPL window handle.
+ * @return Returns OPL_TRUE if window maximized or
+ *         OPL_FALSE if it's not.
+ */
+uint8_t oplWindowIsMaximized(OplWindow window);
+
+/**
+ * @brief Toggles fullscreen mode for a window.
+ * @param window An OPL window handle.
+ */
+void oplWindowToggleFullscreen(OplWindow window);
+
+/**
+ * @brief Return wheter a window in fullscreen mode or not.
+ * @param window An OPL window handle.
+ * @return Returns OPL_TRUE if window in fullscreen mode
+ *         or OPL_FALSE if it's not.
+ */
+uint8_t oplWindowIsFullscreen(OplWindow window);
 
 /**
  * @brief Allocates a block of memory of the given size.
@@ -303,8 +497,9 @@ void oplSleep(uint64_t ms);
 /**
  * @brief Creates Vulkan surface.
  */
-VkResult oplCreateVkSurface(
-  VkInstance instance, const VkAllocationCallbacks *allocator,
+VkResult oplCreateSurface(
+  OplWindow window, VkInstance instance,
+  const VkAllocationCallbacks *allocator,
   VkSurfaceKHR *surface);
 
 /**
@@ -313,4 +508,5 @@ VkResult oplCreateVkSurface(
  *
  * User shouldn't free returned array.
  */
-uint16_t oplVkExtensions(const char* *extensionNames);
+void oplGetDeviceExtensions(
+  uint32_t *extensionsCount, const char* *extensionNames);

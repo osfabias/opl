@@ -26,6 +26,7 @@ message(STATUS "lib type: static")
 message(STATUS "version:  ${OPL_VERSION}")
 
 # ~ detecting standalone build
+set(OPL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 string(COMPARE EQUAL "${CMAKE_CURRENT_SOURCE_DIR}" "${OPL_SOURCE_DIR}" OPL_STANDALONE)
 
 # ~ defining options
@@ -38,9 +39,7 @@ option(OPL_BUILD_EXAMPLE "Build the opl example program" ${OPL_STANDALONE})
 find_package(Vulkan REQUIRED)
 
 # ~ target set up
-add_library(opl STATIC
-  ./src/opl.c
-)
+add_library(opl STATIC ./src/null.c)
 
 target_link_libraries(opl PUBLIC Vulkan::Vulkan)
 target_include_directories(opl PUBLIC include)
@@ -56,6 +55,7 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
   target_sources(opl PRIVATE
     ./src/x11-platform.c
+    # misses time
     ./src/posix-memory.c
     ./src/posix-thread.c
   )

@@ -1,27 +1,34 @@
+#include <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
-#include <vulkan/vulkan_core.h>
+#include <Foundation/Foundation.h>
 #import <QuartzCore/QuartzCore.h>
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_metal.h>
 
 #include "opl/opl.h"
-#include "internal.h"
 
 @class ContentView;
 @class WindowDelegate;
 @class ApplicationDelegate;
 
-struct {
-  _OplState *oplState;
+typedef struct _OplCocoaWindow {
+  NSWindow       *window;
+  ContentView    *view;
+  WindowDelegate *delegate;
+  CAMetalLayer   *metalLayer;
+  uint8_t         shouldClose;
+} _OplCocoaWindow;
 
-  ApplicationDelegate *pAppDelegate;
-  WindowDelegate *windowDelegate;
-  NSWindow *window;
-  ContentView *pView;
-  CAMetalLayer *pMetalLayer;
+struct {
+  uint8_t initialized;
+  ApplicationDelegate *applicationDelegate;
+
   float deviceRatio;
-} s_platformState;
+
+  OplMouseState mouseState;
+  OplKeyboardState keyboardState;
+} s_cocoaState = { .initialized = OPL_FALSE };
 
 static OplKey _translateKey(uint32_t keycode) {
   // https://boredzo.org/blog/wp-content/uploads/2007/05/IMTx-virtual-keycodes.pdf
@@ -256,36 +263,51 @@ static OplKey _translateKey(uint32_t keycode) {
   }
 }
 
-@interface WindowDelegate : NSObject <NSWindowDelegate> {}
+@interface WindowDelegate : NSObject <NSWindowDelegate> {
+  _OplCocoaWindow *oplWindow;
+}
+
+- (instancetype)initWithOplWindow:(_OplCocoaWindow*)initOplWindow;
 
 @end // WindowDelegate
 
 
 @implementation WindowDelegate
 
+- (instancetype)initWithOplWindow:(_OplCocoaWindow*)initOplWindow {
+  self = [super init];
+  if (self != nil) {
+    oplWindow = initOplWindow;
+  }
+
+  return self;
+}
+
 - (BOOL)windowShouldClose:(id)sender {
-  s_platformState.oplState->terminateRequsted = OPL_TRUE;
+  oplWindow->shouldClose = OPL_TRUE;
   return YES;
 }
 
 @end // WindowDelegate
 
 @interface ContentView : NSView <NSTextInputClient> {
+  _OplCocoaWindow           *oplWindow;
   NSWindow                  *window;
   NSTrackingArea            *pRrackingArea;
   NSMutableAttributedString *pMarkedText;
 }
 
-- (instancetype)initWithWindow:(NSWindow*)initWindow;
+- (instancetype)initWithOplWindow:(_OplCocoaWindow*)initOplWindow;
 
 @end // ContentView
 
 @implementation ContentView
 
-  - (instancetype)initWithWindow:(NSWindow*)initWindow {
+  - (instancetype)initWithOplWindow:(_OplCocoaWindow*)initOplWindow {
     self = [super init];
     if (self != nil) {
-      window = initWindow;
+      oplWindow = initOplWindow;
+      window    = oplWindow->window;
     }
 
     return self;
@@ -308,8 +330,7 @@ static OplKey _translateKey(uint32_t keycode) {
   }
   
   - (void)mouseDown:(NSEvent *)event {
-    s_platformState.oplState->mouseState.
-      pButtonStates[OPL_MOUSE_BUTTON_LEFT] = 1;
+    s_cocoaState.mouseState.buttons[OPL_MOUSE_BUTTON_LEFT] = 1;
   }
 
   - (void)mouseDragged:(NSEvent *)event {
@@ -318,8 +339,7 @@ static OplKey _translateKey(uint32_t keycode) {
   }
 
   - (void)mouseUp:(NSEvent *)event {
-    s_platformState.oplState->mouseState.
-      pButtonStates[OPL_MOUSE_BUTTON_LEFT] = 0;
+    s_cocoaState.mouseState.buttons[OPL_MOUSE_BUTTON_LEFT] = 0;
   }
 
   - (void)mouseMoved:(NSEvent *)event {
@@ -328,16 +348,15 @@ static OplKey _translateKey(uint32_t keycode) {
     // Need to invert Y on macOS, since origin is bottom-left.
     // Also need to scale the mouse position by the device pixel
     // ratio so screen lookups are correct.
-    NSSize window_size = s_platformState.pMetalLayer.drawableSize;
-    s_platformState.oplState->mouseState.x
-      = pos.x * s_platformState.pMetalLayer.contentsScale;
-    s_platformState.oplState->mouseState.y =
-      window_size.height - (pos.y * s_platformState.pMetalLayer.contentsScale);
+    NSSize window_size = oplWindow->metalLayer.drawableSize;
+    s_cocoaState.mouseState.x
+      = pos.x * oplWindow->metalLayer.contentsScale;
+    s_cocoaState.mouseState.y =
+      window_size.height - (pos.y * oplWindow->metalLayer.contentsScale);
   }
 
   - (void)rightMouseDown:(NSEvent *)event {
-    s_platformState.oplState->mouseState
-      .pButtonStates[OPL_MOUSE_BUTTON_RIGHT] = 1;
+    s_cocoaState.mouseState.buttons[OPL_MOUSE_BUTTON_RIGHT] = 1;
   }
 
   - (void)rightMouseDragged:(NSEvent *)event  {
@@ -346,14 +365,12 @@ static OplKey _translateKey(uint32_t keycode) {
   }
 
   - (void)rightMouseUp:(NSEvent *)event {
-    s_platformState.oplState->mouseState
-      .pButtonStates[OPL_MOUSE_BUTTON_RIGHT] = 0;
+    s_cocoaState.mouseState.buttons[OPL_MOUSE_BUTTON_RIGHT] = 0;
   }
 
   - (void)otherMouseDown:(NSEvent *)event {
     // Interpreted as middle click
-    s_platformState.oplState->mouseState
-      .pButtonStates[OPL_MOUSE_BUTTON_MIDDLE] = 1;
+    s_cocoaState.mouseState.buttons[OPL_MOUSE_BUTTON_MIDDLE] = 1;
   }
 
   - (void)otherMouseDragged:(NSEvent *)event {
@@ -363,27 +380,23 @@ static OplKey _translateKey(uint32_t keycode) {
 
   - (void)otherMouseUp:(NSEvent *)event {
     // Interpreted as middle click
-    s_platformState.oplState->mouseState
-      .pButtonStates[OPL_MOUSE_BUTTON_MIDDLE] = 0;
+    s_cocoaState.mouseState.buttons[OPL_MOUSE_BUTTON_MIDDLE] = 0;
   }
 
   - (void)keyDown:(NSEvent *)event {
     OplKey key = _translateKey((uint32_t)[event keyCode]);
-    s_platformState.oplState->keyboardState
-      .pKeyStates[key] = 1;
+    s_cocoaState.keyboardState.keys[key] = 1;
 
     // [self interpretKeyEvents:@[event]];
   }
 
   - (void)keyUp:(NSEvent *)event {
     OplKey key = _translateKey((uint32_t)[event keyCode]);
-    s_platformState.oplState->keyboardState
-      .pKeyStates[key] = 1;
+    s_cocoaState.keyboardState.keys[key] = 1;
   }
 
   - (void)scrollWheel:(NSEvent *)event {
-    s_platformState.oplState->mouseState.wheel =
-      ((int8_t)[event scrollingDeltaY]);
+    s_cocoaState.mouseState.wheel = ((int8_t)[event scrollingDeltaY]);
   }
 
   // If these methods not implemented - compiler generates warnings and
@@ -438,65 +451,18 @@ static OplKey _translateKey(uint32_t keycode) {
 
 @end // ApplicationDelegate 
 
-uint8_t _oplPlatformInit(const OplInitInfo *initInfo, _OplState *oplState) {
-  // TODO: There should be an @autoreleasepool block, but it
-  // causes segfault in future on ogePlatformTerminate call
+uint8_t oplInit() {
+  if (s_cocoaState.initialized) { return OPL_TRUE; }
 
-  // Zero platform state struct
-  s_platformState.oplState = oplState;
-
+  // I don't know what this line stands for (o_O)
   [NSApplication sharedApplication];
 
   // App delegate creation
-  s_platformState.pAppDelegate = [[ApplicationDelegate alloc] init];
-  if (!s_platformState.pAppDelegate) {
-    return OPL_FALSE;
-  }
-  [NSApp setDelegate:s_platformState.pAppDelegate];
+  s_cocoaState.applicationDelegate = [[ApplicationDelegate alloc] init];
+  if (!s_cocoaState.applicationDelegate) { return OPL_FALSE; }
+  [NSApp setDelegate:s_cocoaState.applicationDelegate];
 
-  // Window delegate creation
-  s_platformState.windowDelegate = [[WindowDelegate alloc] init];
-  if (!s_platformState.windowDelegate) {
-    return OPL_FALSE;
-  }
-
-  // Window creation
-  s_platformState.window = [[NSWindow alloc]
-      initWithContentRect:NSMakeRect(
-        0,
-        0,
-        initInfo->surfaceWidth,
-        initInfo->surfaceHeight)
-      styleMask:
-        NSWindowStyleMaskTitled | 
-        NSWindowStyleMaskClosable |
-        NSWindowStyleMaskMiniaturizable |
-        NSWindowStyleMaskResizable
-      backing: NSBackingStoreBuffered
-      defer: NO
-    ];
-
-  if (!s_platformState.window) {
-    return OPL_FALSE;
-  }
-
-  // View creation
-  s_platformState.pView =
-    [[ContentView alloc] initWithWindow:s_platformState.window];
-  [s_platformState.pView setWantsLayer:YES];
-
-  // Layer creation
-  s_platformState.pMetalLayer = [CAMetalLayer layer];
-
-  // Setting window properties
-  [s_platformState.window setLevel:NSNormalWindowLevel];
-  [s_platformState.window setContentView:s_platformState.pView];
-  [s_platformState.window makeFirstResponder:s_platformState.pView];
-  [s_platformState.window setTitle:@(initInfo->applicationName)];
-  [s_platformState.window setDelegate:s_platformState.windowDelegate];
-  [s_platformState.window setAcceptsMouseMovedEvents:YES];
-  [s_platformState.window setRestorable:NO];
-
+  // Starting application
   if (![[NSRunningApplication currentApplication] isFinishedLaunching]) {
     [NSApp run];
   }
@@ -504,50 +470,217 @@ uint8_t _oplPlatformInit(const OplInitInfo *initInfo, _OplState *oplState) {
   // Making the app a proper UI app since we're unbundled
   [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
 
-  // Putting window in front on launch
+  // Making it possible to create windows in front of others
   [NSApp activateIgnoringOtherApps:YES];
-  [s_platformState.window makeKeyAndOrderFront:nil];
 
-  // Handle content scaling for various fidelity displays (i.e. Retina)
-  s_platformState.pMetalLayer.bounds = s_platformState.pView.bounds;
-
-  // It's important to set the drawableSize to the actual backing pixels. When rendering
-  // full-screen, we can skip the macOS compositor if the size matches the display size.
-  s_platformState.pMetalLayer.drawableSize = [s_platformState.pView convertSizeToBacking:s_platformState.pView.bounds.size];
-
-  // In its implementation of vkGetPhysicalDeviceSurfaceCapabilitiesKHR, MoltenVK takes into
-  // consideration both the size (in points) of the bounds, and the contentsScale of the
-  // CAMetalLayer from which the Vulkan surface was created.
-  // NOTE: See also https://github.com/KhronosGroup/MoltenVK/issues/428
-  s_platformState.pMetalLayer.contentsScale = s_platformState.pView.window.backingScaleFactor;
-
-  // Save off the device pixel ratio.
-  s_platformState.deviceRatio = s_platformState.pMetalLayer.contentsScale;
-  [s_platformState.pView setLayer:s_platformState.pMetalLayer];
-
-  // This is set to NO by default, but is also important to ensure we can bypass the compositor
-  // in full-screen mode
-  // NOTE: See "Direct to Display" http://metalkit.org/2017/06/30/introducing-metal-2.html.
-  s_platformState.pMetalLayer.opaque = YES;
+  s_cocoaState.initialized = OPL_TRUE;
 
   return OPL_TRUE;
 }
 
-void _oplPlatformTerminate() {
-  [s_platformState.window orderOut:nil];
-
-  [s_platformState.window setDelegate:nil];
-  [s_platformState.windowDelegate release];
-
-  [s_platformState.pView release];
-  s_platformState.pView = nil;
-
-  [s_platformState.window close];
-  s_platformState.window = nil;
+void oplTerminate() {
+  if (!s_cocoaState.initialized) { return; }
 
   [NSApp setDelegate:nil];
-  [s_platformState.pAppDelegate release];
-  s_platformState.pAppDelegate = nil;
+  [s_cocoaState.applicationDelegate release];
+
+  s_cocoaState.initialized = OPL_FALSE;
+}
+
+OplWindow oplWindowCreate(const OplWindowCreateInfo *createInfo) {
+  _OplCocoaWindow *window = oplAlloc(sizeof(_OplCocoaWindow));
+
+  // Window delegate creation
+  window->delegate = [[WindowDelegate alloc] initWithOplWindow:window];
+  if (!window->delegate) { return OPL_FALSE; }
+
+  // Window creation
+  NSWindowStyleMask styleMask = 0;
+  if (createInfo->styleFlags & OPL_WINDOW_STYLE_TITLED) {
+    styleMask |= NSWindowStyleMaskTitled;
+  }
+  if (createInfo->styleFlags & OPL_WINDOW_STYLE_CLOSABLE) {
+    styleMask |= NSWindowStyleMaskClosable;
+  }
+  if (createInfo->styleFlags & OPL_WINDOW_STYLE_RESIZABLE) {
+    styleMask |= NSWindowStyleMaskResizable;
+  }
+  if (createInfo->styleFlags & OPL_WINDOW_STYLE_BORDERLESS) {
+    styleMask |= NSWindowStyleMaskBorderless;
+  }
+  if (createInfo->styleFlags & OPL_WINDOW_STYLE_MINIATURIZABLE) {
+    styleMask |= NSWindowStyleMaskMiniaturizable;
+  }
+
+  window->window = [[NSWindow alloc]
+    initWithContentRect:NSMakeRect(
+      createInfo->x,
+      NSScreen.mainScreen.frame.size.height - createInfo->height - createInfo->y,
+      createInfo->width,
+      createInfo->height)
+    styleMask: styleMask
+    backing: NSBackingStoreBuffered
+    defer: NO
+  ];
+
+  if (!window->window) {
+    oplFree(window);
+    return 0;
+  }
+
+  if (createInfo->styleFlags & OPL_WINDOW_STYLE_FULLSCREEN) {
+    [window->window toggleFullScreen: nil];
+  }
+
+  // View creation
+  window->view = [[ContentView alloc] initWithOplWindow:window];
+  [window->view setWantsLayer:YES];
+
+  // Layer creation
+  window->metalLayer = [CAMetalLayer layer];
+
+  // Setting window properties
+  [window->window setRestorable:NO];
+  [window->window setContentView:window->view];
+  [window->window setDelegate:window->delegate];
+  [window->window setLevel:NSNormalWindowLevel];
+  [window->window setTitle:@(createInfo->title)];
+  [window->window setAcceptsMouseMovedEvents:YES];
+  [window->window makeFirstResponder:window->view];
+
+
+  // Putting window in front on launch
+  [window->window makeKeyAndOrderFront:nil];
+
+  // Handle content scaling for various fidelity displays (i.e. Retina)
+  window->metalLayer.bounds = window->view.bounds;
+
+  // It's important to set the drawableSize to the actual backing
+  // pixels. When rendering full-screen, we can skip the macOS compositor
+  // if the size matches the display size.
+  window->metalLayer.drawableSize =
+    [window->view convertSizeToBacking:window->view.bounds.size];
+
+  // In its implementation of vkGetPhysicalDeviceSurfaceCapabilitiesKHR, 
+  // MoltenVK takes into consideration both the size (in points) of the
+  // bounds, and the contentsScale of the CAMetalLayer from which the
+  // Vulkan surface was created.
+  // NOTE: See also https://github.com/KhronosGroup/MoltenVK/issues/428
+  window->metalLayer.contentsScale = window->view.window.backingScaleFactor;
+
+  // Save off the device pixel ratio.
+  // window->deviceRatio = window->metalLayer.contentsScale;
+
+  // Set view's Metal layer
+  [window->view setLayer:window->metalLayer];
+
+  // This is set to NO by default, but is also important to ensure we
+  // can bypass the compositor in full-screen mode
+  // NOTE: See "Direct to Display" http://metalkit.org/2017/06/30/introducing-metal-2.html.
+  window->metalLayer.opaque = YES;
+
+  return window;
+}
+
+void oplWindowDestroy(OplWindow window) {
+  _OplCocoaWindow *cocoaWindow = (_OplCocoaWindow*)(window);
+  [cocoaWindow->window orderOut:nil];
+
+  [cocoaWindow->window setDelegate:nil];
+  [cocoaWindow->delegate release];
+
+  [cocoaWindow->view release];
+  [cocoaWindow->window close];
+
+  oplFree(cocoaWindow);
+}
+
+uint8_t oplWindowShouldClose(OplWindow window) {
+  return ((_OplCocoaWindow*)window)->shouldClose;
+}
+
+void oplWindowSetTitle(OplWindow window, const char *title) {
+  [((_OplCocoaWindow*)window)->window setTitle:@(title)];
+}
+
+const char* oplWindowGetTitle(OplWindow window) {
+  return [((_OplCocoaWindow*)window)->window.title cStringUsingEncoding:NSASCIIStringEncoding];
+}
+
+void oplWindowSetSize(OplWindow window, uint16_t width, uint16_t height) {
+  const NSWindow *nsWindow = ((_OplCocoaWindow*)window)->window;
+  const uint16_t topBarHeight =
+    nsWindow.frame.size.height - [nsWindow contentRectForFrameRect: nsWindow.frame].size.height;
+
+  [nsWindow
+    setFrame:NSMakeRect(
+      nsWindow.frame.origin.x,
+      nsWindow.frame.origin.y,
+      width,
+      height + topBarHeight
+    )
+    display:YES
+    animate:YES
+  ];
+}
+
+void oplWindowGetSize(OplWindow window, uint16_t *width, uint16_t *height) {
+  const NSWindow *nsWindow = ((_OplCocoaWindow*)window)->window;
+  const NSSize size = [nsWindow contentRectForFrameRect: nsWindow.frame].size;
+
+  *width  = (uint16_t)size.width;
+  *height = (uint16_t)size.height;
+}
+
+void oplWindowSetPosition(OplWindow window, uint16_t x, uint16_t y) {
+  const NSWindow *nsWindow = ((_OplCocoaWindow*)window)->window;
+
+  [nsWindow
+    setFrame:NSMakeRect(
+      x,
+      NSScreen.mainScreen.frame.size.height - nsWindow.frame.size.height - y,
+      nsWindow.frame.size.width,
+      nsWindow.frame.size.height
+    )
+    display:YES
+    animate:YES
+  ];
+}
+
+void oplWindowGetPosition(OplWindow window, uint16_t *x, uint16_t *y) {
+  // Need to invert Y on macOS, since origin is bottom-left.
+  const NSWindow *nsWindow = ((_OplCocoaWindow*)window)->window;
+  *x = nsWindow.frame.origin.x;
+  *y = NSScreen.mainScreen.frame.size.height -
+       nsWindow.frame.size.height -
+       nsWindow.frame.origin.y;
+}
+
+void oplWindowMiniaturize(OplWindow window) {
+  [((_OplCocoaWindow*)window)->window setIsMiniaturized:YES];
+}
+
+uint8_t oplWindowIsMinituarized(OplWindow window) {
+  return ((_OplCocoaWindow*)window)->window.isMiniaturized;
+  return OPL_FALSE;
+}
+
+void oplWindowMaximize(OplWindow window) {
+  [((_OplCocoaWindow*)window)->window setIsMiniaturized:NO];
+}
+
+uint8_t oplWindowIsMaximized(OplWindow window) {
+  return !((_OplCocoaWindow*)window)->window.isMiniaturized;
+  return OPL_FALSE;
+}
+
+void oplWindowToggleFullscreen(OplWindow window) {
+  [((_OplCocoaWindow*)window)->window toggleFullScreen: nil];
+}
+
+uint8_t oplWindowIsFullscreen(OplWindow window) {
+  return ((_OplCocoaWindow*)window)->window.styleMask &
+         NSWindowStyleMaskFullScreen;
 }
 
 void oplPumpMessages() {
@@ -576,25 +709,26 @@ void oplConsoleWrite(const char *message, OplColor color) {
   printf("\033[%sm%s\033[0m", clrStrings[color], message);
 }
 
-VkResult oplCreateVkSurface(
-  VkInstance instance, const VkAllocationCallbacks *allocator,
+VkResult oplCreateSurface(
+  OplWindow window, VkInstance instance,
+  const VkAllocationCallbacks *allocator,
   VkSurfaceKHR *surface) {
 
   VkMetalSurfaceCreateInfoEXT info = {
     .sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT,
     .pNext = 0,
     .flags = 0,
-    .pLayer = s_platformState.pMetalLayer,
+    .pLayer = ((_OplCocoaWindow*)window)->metalLayer,
   };
 
   return vkCreateMetalSurfaceEXT(instance, &info, allocator, surface);
 }
 
-uint16_t oplVkExtensions(const char* *extensionNames) {
-  if (extensionNames) {
-    extensionNames[0] = "VK_EXT_metal_surface";
-    extensionNames[1] = "VK_KHR_surface";
-  }
-  return 2;
+void oplGetDeviceExtensions(
+  uint32_t *extensionsCount, const char* *extensionNames) {
+  if (!extensionNames) { *extensionsCount = 2; return; }
+
+  extensionNames[0] = "VK_EXT_metal_surface";
+  extensionNames[1] = "VK_KHR_surface";
 }
 

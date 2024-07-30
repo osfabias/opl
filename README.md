@@ -1,9 +1,18 @@
 # Osfabias Platform Layer
-C library that provides a **single interface** for applications
-to create windows / surfaces and read mouse, keyboard, joystick and sensor screen input.
+OPL is an Open-Source, multi-platform library for vulkan application 
+development. It provides a simple, platform-independent API for
+creating windows *(on desktop platforms)* and surfaces *(on mobile and
+console platform)*, reading user input, handling platform events,
+efficient memory management, playing audio, etc.
 
 Currently supported platforms:
 - MacOS.
+
+Platform to be supported (SOON):
+- Linux (X11);
+- Windows;
+- Android;
+- iOS.
 
 # How to build
 ## Requirements:
