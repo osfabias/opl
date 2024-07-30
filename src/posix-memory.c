@@ -8,27 +8,27 @@ void* oplAlloc(uint64_t size) {
   return malloc(size);
 }
 
-void* oplRealloc(void *pBlock, uint64_t size) {
-  return realloc(pBlock, size);
+void* oplRealloc(void *block, uint64_t size) {
+  return realloc(block, size);
 }
 
-void oplFree(void *pBlock) {
-  free(pBlock);
+void oplFree(void *block) {
+  free(block);
 }
 
-void oplMemCpy(void *pDstBlock, const void *pSrcBlock, uint64_t size) {
-  memcpy(pDstBlock, pSrcBlock, size);
+void oplMemCpy(void *dst, const void *src, uint64_t size) {
+  memcpy(dst, src, size);
 }
 
-void oplMemSet(void *pBlock, int32_t value, uint64_t size) {
-  memset(pBlock, value, size);
+void oplMemSet(void *block, int32_t value, uint64_t size) {
+  memset(block, value, size);
 }
 
-void oplMemMove(void *pDstBlock, const void *pSrcBlock, uint64_t size) {
-  memmove(pDstBlock, pSrcBlock, size);
+void oplMemMove(void *dst, const void *src, uint64_t size) {
+  memmove(dst, src, size);
 }
 
-int32_t oplMemCmp(const void *pBlock1, const void *pBlock2, uint64_t size) {
-  return memcmp(pBlock1, pBlock2, size);
+int32_t oplMemCmp(const void *block1, const void *block2, uint64_t size) {
+  return memcmp(block1, block2, size);
 }
 

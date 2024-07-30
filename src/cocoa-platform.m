@@ -13,7 +13,7 @@
 @class ApplicationDelegate;
 
 struct {
-  _OplState *pOplState;
+  _OplState *oplState;
 
   ApplicationDelegate *pAppDelegate;
   WindowDelegate *pWindowDelegate;
@@ -264,7 +264,7 @@ static OplKey _translateKey(uint32_t keycode) {
 @implementation WindowDelegate
 
 - (BOOL)windowShouldClose:(id)sender {
-  s_platformState.pOplState->terminateRequsted = OPL_TRUE;
+  s_platformState.oplState->terminateRequsted = OPL_TRUE;
   return YES;
 }
 
@@ -308,7 +308,7 @@ static OplKey _translateKey(uint32_t keycode) {
   }
   
   - (void)mouseDown:(NSEvent *)event {
-    s_platformState.pOplState->mouseState.
+    s_platformState.oplState->mouseState.
       pButtonStates[OPL_MOUSE_BUTTON_LEFT] = 1;
   }
 
@@ -318,7 +318,7 @@ static OplKey _translateKey(uint32_t keycode) {
   }
 
   - (void)mouseUp:(NSEvent *)event {
-    s_platformState.pOplState->mouseState.
+    s_platformState.oplState->mouseState.
       pButtonStates[OPL_MOUSE_BUTTON_LEFT] = 0;
   }
 
@@ -329,14 +329,14 @@ static OplKey _translateKey(uint32_t keycode) {
     // Also need to scale the mouse position by the device pixel
     // ratio so screen lookups are correct.
     NSSize window_size = s_platformState.pMetalLayer.drawableSize;
-    s_platformState.pOplState->mouseState.x
+    s_platformState.oplState->mouseState.x
       = pos.x * s_platformState.pMetalLayer.contentsScale;
-    s_platformState.pOplState->mouseState.y =
+    s_platformState.oplState->mouseState.y =
       window_size.height - (pos.y * s_platformState.pMetalLayer.contentsScale);
   }
 
   - (void)rightMouseDown:(NSEvent *)event {
-    s_platformState.pOplState->mouseState
+    s_platformState.oplState->mouseState
       .pButtonStates[OPL_MOUSE_BUTTON_RIGHT] = 1;
   }
 
@@ -346,13 +346,13 @@ static OplKey _translateKey(uint32_t keycode) {
   }
 
   - (void)rightMouseUp:(NSEvent *)event {
-    s_platformState.pOplState->mouseState
+    s_platformState.oplState->mouseState
       .pButtonStates[OPL_MOUSE_BUTTON_RIGHT] = 0;
   }
 
   - (void)otherMouseDown:(NSEvent *)event {
     // Interpreted as middle click
-    s_platformState.pOplState->mouseState
+    s_platformState.oplState->mouseState
       .pButtonStates[OPL_MOUSE_BUTTON_MIDDLE] = 1;
   }
 
@@ -363,13 +363,13 @@ static OplKey _translateKey(uint32_t keycode) {
 
   - (void)otherMouseUp:(NSEvent *)event {
     // Interpreted as middle click
-    s_platformState.pOplState->mouseState
+    s_platformState.oplState->mouseState
       .pButtonStates[OPL_MOUSE_BUTTON_MIDDLE] = 0;
   }
 
   - (void)keyDown:(NSEvent *)event {
     OplKey key = _translateKey((uint32_t)[event keyCode]);
-    s_platformState.pOplState->keyboardState
+    s_platformState.oplState->keyboardState
       .pKeyStates[key] = 1;
 
     // [self interpretKeyEvents:@[event]];
@@ -377,12 +377,12 @@ static OplKey _translateKey(uint32_t keycode) {
 
   - (void)keyUp:(NSEvent *)event {
     OplKey key = _translateKey((uint32_t)[event keyCode]);
-    s_platformState.pOplState->keyboardState
+    s_platformState.oplState->keyboardState
       .pKeyStates[key] = 1;
   }
 
   - (void)scrollWheel:(NSEvent *)event {
-    s_platformState.pOplState->mouseState.wheel =
+    s_platformState.oplState->mouseState.wheel =
       ((int8_t)[event scrollingDeltaY]);
   }
 
@@ -438,12 +438,12 @@ static OplKey _translateKey(uint32_t keycode) {
 
 @end // ApplicationDelegate 
 
-uint8_t _oplPlatformInit(const OplInitInfo *pInitInfo, _OplState *pOplState) {
+uint8_t _oplPlatformInit(const OplInitInfo *initInfo, _OplState *oplState) {
   // TODO: There should be an @autoreleasepool block, but it
   // causes segfault in future on ogePlatformTerminate call
 
   // Zero platform state struct
-  s_platformState.pOplState = pOplState;
+  s_platformState.oplState = OplState;
 
   [NSApplication sharedApplication];
 
@@ -570,15 +570,15 @@ void oplPumpMessages() {
   } // autoreleasepool
 }
 
-void oplConsoleWrite(const char *pMessage, OplColor color) {
+void oplConsoleWrite(const char *message, OplColor color) {
   // none, trace, info, warn, error, fatal
   const char* clrStrings[] = { "0", "1;30", "1;32", "1;33", "1;31", "0;41", };
-  printf("\033[%sm%s\033[0m", clrStrings[color], pMessage);
+  printf("\033[%sm%s\033[0m", clrStrings[color], message);
 }
 
 VkResult oplCreateVkSurface(
-  VkInstance instance, const VkAllocationCallbacks *pAllocator,
-  VkSurfaceKHR *pSurface) {
+  VkInstance instance, const VkAllocationCallbacks *allocator,
+  VkSurfaceKHR *surface) {
 
   VkMetalSurfaceCreateInfoEXT info = {
     .sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT,
@@ -587,13 +587,13 @@ VkResult oplCreateVkSurface(
     .pLayer = s_platformState.pMetalLayer,
   };
 
-  return vkCreateMetalSurfaceEXT(instance, &info, pAllocator, pSurface);
+  return vkCreateMetalSurfaceEXT(instance, &info, allocator, surface);
 }
 
-uint16_t oplVkExtensions(const char**ppExtensionNames) {
-  if (ppExtensionNames) {
-    ppExtensionNames[0] = "VK_EXT_metal_surface";
-    ppExtensionNames[1] = "VK_KHR_surface";
+uint16_t oplVkExtensions(const char* *extensionNames) {
+  if (extensionNames) {
+    extensionNames[0] = "VK_EXT_metal_surface";
+    extensionNames[1] = "VK_KHR_surface";
   }
   return 2;
 }

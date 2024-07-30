@@ -14,7 +14,7 @@
  *                  OPL types                   *
  ************************************************/
 typedef struct OplInitInfo {
-  const char *pApplicationName;
+  const char *applicationName;
   uint16_t surfaceWidth;
   uint16_t surfaceHeight;
 } OplInitInfo;
@@ -251,40 +251,37 @@ void* oplAlloc(uint64_t size);
 /**
  * @brief Reallocates a block of memory to the given size.
  */
-void* oplRealloc(void *pBlock, uint64_t size);
+void* oplRealloc(void *block, uint64_t size);
 
 /**
  * @brief Frees a block of memory.
  */
-void  oplFree(void *pBlock);
+void  oplFree(void *block);
 
 /**
  * @bried Copies a block of memory.
  */
-void oplMemCpy(void *pDstBlock, const void *pSrcBlock,
-               uint64_t size);
+void oplMemCpy(void *dst, const void *src, uint64_t size);
 
 /**
  * @brief Sets a block of memory to a given value.
  */
-void oplMemSet(void *pBlock, int32_t value, uint64_t size);
+void oplMemSet(void *block, int32_t value, uint64_t size);
 
 /**
  * @brief Moves a block of memory.
  */
-void oplMemMove(void *pDstBlock, const void *pSrcBlock,
-                uint64_t size);
+void oplMemMove(void *dst, const void *src, uint64_t size);
 
 /**
- * @brief Compares two block of memory.
- */
-int32_t oplMemCmp(const void *pBlock1, const void *pBlock2,
+ * @brief Compares two block of memory. */
+int32_t oplMemCmp(const void *block1, const void *block2,
                   uint64_t size);
 
 /**
  * @brief Writes colorized text to console.
  */
-void oplConsoleWrite(const char *pMessage, OplColor color);
+void oplConsoleWrite(const char *message, OplColor color);
 
 /**
  * @brief Returns amount of milliseconds past since the unix epoch.
@@ -307,8 +304,8 @@ void oplSleep(uint64_t ms);
  * @brief Creates Vulkan surface.
  */
 VkResult oplCreateVkSurface(
-  VkInstance instance, const VkAllocationCallbacks *pAllocator,
-  VkSurfaceKHR *pSurface);
+  VkInstance instance, const VkAllocationCallbacks *allocator,
+  VkSurfaceKHR *surface);
 
 /**
  * @brief Returns number of required extensions for Vulkan
@@ -316,4 +313,4 @@ VkResult oplCreateVkSurface(
  *
  * User shouldn't free returned array.
  */
-uint16_t oplVkExtensions(const char* *ppExtensionNames);
+uint16_t oplVkExtensions(const char* *extensionNames);

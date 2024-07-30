@@ -50,11 +50,16 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
   message(FATAL_ERROR "Windows platform not implemented.")
   # Add source files here instead of "message()" call
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  message(FATAL_ERROR "Linux platform not implemented.")
-  # Add source files here instead of "message()" call
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin") # MACOS
-  target_compile_definitions(opl PRIVATE OPL_PLATFORM_MACOS)
+  find_package(X11 REQUIRED)
 
+  target_link_libraries(opl PUBLIC ${X11_LIBRARIES})
+
+  target_sources(opl PRIVATE
+    ./src/x11-platform.c
+    ./src/posix-memory.c
+    ./src/posix-thread.c
+  )
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin") # MACOS
   find_library(COCOA_LIBRARY Cocoa)
   find_library(QUARTZ_LIBRARY QuartzCore)
   target_link_libraries(opl PUBLIC
