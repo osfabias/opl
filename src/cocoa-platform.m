@@ -704,6 +704,14 @@ void oplPumpMessages() {
   } // autoreleasepool
 }
 
+const OplKeyboardState* oplKeyboardGetState() {
+  return &s_cocoaState.keyboardState;
+}
+
+const OplMouseState* oplMouseGetState() {
+  return &s_cocoaState.mouseState;
+}
+
 void oplConsoleWrite(const char *message, OplColor color) {
   // none, trace, info, warn, error, fatal
   const char* clrStrings[] = { "0", "1;30", "1;32", "1;33", "1;31", "0;41", };
