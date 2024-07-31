@@ -27,6 +27,10 @@ int main() {
   OplWindow window  = oplWindowCreate(&windowCreateInfo);
   OplWindow window2 = oplWindowCreate(&windowCreateInfo2);
 
+  oplWindowSetTitle(window2, "Window2");
+  const char* title = oplWindowGetTitle(window2);
+  puts(title);
+
   while (!oplWindowShouldClose(window)) {
     oplPumpMessages();
   }

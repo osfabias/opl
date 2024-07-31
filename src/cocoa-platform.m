@@ -489,6 +489,7 @@ void oplTerminate() {
 
 OplWindow oplWindowCreate(const OplWindowCreateInfo *createInfo) {
   _OplCocoaWindow *window = oplAlloc(sizeof(_OplCocoaWindow));
+  window->shouldClose = OPL_FALSE;
 
   // Window delegate creation
   window->delegate = [[WindowDelegate alloc] initWithOplWindow:window];
