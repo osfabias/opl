@@ -55,7 +55,7 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
   target_sources(opl PRIVATE
     ./src/x11-platform.c
-    # misses time
+    ./src/posix-time.c
     ./src/posix-memory.c
     ./src/posix-thread.c
   )

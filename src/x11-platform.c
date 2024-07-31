@@ -1,4 +1,3 @@
-#include <X11/X.h>
 #include <stdio.h>
 
 #include <X11/Xlib.h>
@@ -13,7 +12,7 @@ typedef struct _OplX11Window {
   uint8_t shouldClose;
 } _OplX11Window;
 
-struct {
+static struct {
   uint8_t initialized;
   Display *display;
   int screenIndex;
