@@ -600,6 +600,14 @@ uint8_t oplWindowShouldClose(OplWindow window) {
   return ((_OplCocoaWindow*)window)->shouldClose;
 }
 
+const OplKeyboardState* oplKeyboardGetState() {
+  return &s_cocoaState.keyboardState;
+}
+
+const OplMouseState* oplMouseGetState() {
+  return &s_cocoaState.mouseState;
+}
+
 void oplWindowSetTitle(OplWindow window, const char *title) {
   [((_OplCocoaWindow*)window)->window setTitle:@(title)];
 }
