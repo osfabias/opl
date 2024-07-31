@@ -2,14 +2,14 @@
 OPL is an Open-Source, multi-platform library for vulkan application 
 development. It provides a simple, platform-independent API for
 creating windows *(on desktop platforms)* and surfaces *(on mobile and
-console platform)*, reading user input, handling platform events,
+console platforms)*, reading user input, handling platform events,
 efficient memory management, playing audio, etc.
 
 Currently supported platforms:
+- Linux (X11);
 - MacOS.
 
 Platform to be supported (SOON):
-- Linux (X11);
 - Windows;
 - Android;
 - iOS.
@@ -18,6 +18,12 @@ Platform to be supported (SOON):
 ## Requirements:
 - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) (latest version)[*](https://github.com/osfabias/opl/issues/1)
 - CMake (version 2.16+)
+
+### Linux:
+- Xlib
+
+### MacOS:
+- Cocoa
 
 ### 1. Clone project.
 ```shell
