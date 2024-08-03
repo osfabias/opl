@@ -1,7 +1,8 @@
+#import  <Cocoa/Cocoa.h>
+#import  <QuartzCore/QuartzCore.h>
+
 #include <AppKit/AppKit.h>
-#import <Cocoa/Cocoa.h>
 #include <Foundation/Foundation.h>
-#import <QuartzCore/QuartzCore.h>
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_metal.h>
@@ -12,13 +13,13 @@
 @class WindowDelegate;
 @class ApplicationDelegate;
 
-typedef struct _OplCocoaWindow {
+struct OplWindow {
   NSWindow       *window;
   ContentView    *view;
   WindowDelegate *delegate;
   CAMetalLayer   *metalLayer;
   uint8_t         shouldClose;
-} _OplCocoaWindow;
+};
 
 struct {
   uint8_t initialized;
@@ -264,17 +265,17 @@ static OplKey _translateKey(uint32_t keycode) {
 }
 
 @interface WindowDelegate : NSObject <NSWindowDelegate> {
-  _OplCocoaWindow *oplWindow;
+  OplWindow *oplWindow;
 }
 
-- (instancetype)initWithOplWindow:(_OplCocoaWindow*)initOplWindow;
+- (instancetype)initWithOplWindow:(OplWindow*)initOplWindow;
 
 @end // WindowDelegate
 
 
 @implementation WindowDelegate
 
-- (instancetype)initWithOplWindow:(_OplCocoaWindow*)initOplWindow {
+- (instancetype)initWithOplWindow:(OplWindow*)initOplWindow {
   self = [super init];
   if (self != nil) {
     oplWindow = initOplWindow;
@@ -291,19 +292,19 @@ static OplKey _translateKey(uint32_t keycode) {
 @end // WindowDelegate
 
 @interface ContentView : NSView <NSTextInputClient> {
-  _OplCocoaWindow           *oplWindow;
+  OplWindow           *oplWindow;
   NSWindow                  *window;
   NSTrackingArea            *pRrackingArea;
   NSMutableAttributedString *pMarkedText;
 }
 
-- (instancetype)initWithOplWindow:(_OplCocoaWindow*)initOplWindow;
+- (instancetype)initWithOplWindow:(OplWindow*)initOplWindow;
 
 @end // ContentView
 
 @implementation ContentView
 
-  - (instancetype)initWithOplWindow:(_OplCocoaWindow*)initOplWindow {
+  - (instancetype)initWithOplWindow:(OplWindow*)initOplWindow {
     self = [super init];
     if (self != nil) {
       oplWindow = initOplWindow;
@@ -473,6 +474,9 @@ uint8_t oplInit() {
   // Making it possible to create windows in front of others
   [NSApp activateIgnoringOtherApps:YES];
 
+  // Make all windows created appear on top of others
+  [[NSRunningApplication currentApplication] activateWithOptions:0];
+
   s_cocoaState.initialized = OPL_TRUE;
 
   return OPL_TRUE;
@@ -487,13 +491,13 @@ void oplTerminate() {
   s_cocoaState.initialized = OPL_FALSE;
 }
 
-OplWindow oplWindowCreate(const OplWindowCreateInfo *createInfo) {
-  _OplCocoaWindow *window = oplAlloc(sizeof(_OplCocoaWindow));
+OplWindow* oplWindowCreate(const OplWindowCreateInfo *createInfo) {
+  OplWindow *window = oplAlloc(sizeof(OplWindow));
   window->shouldClose = OPL_FALSE;
 
   // Window delegate creation
   window->delegate = [[WindowDelegate alloc] initWithOplWindow:window];
-  if (!window->delegate) { return OPL_FALSE; }
+  if (!window->delegate) { oplFree(window); return 0; }
 
   // Window creation
   NSWindowStyleMask styleMask = 0;
@@ -524,10 +528,7 @@ OplWindow oplWindowCreate(const OplWindowCreateInfo *createInfo) {
     defer: NO
   ];
 
-  if (!window->window) {
-    oplFree(window);
-    return 0;
-  }
+  if (!window->window) { oplFree(window); return 0; }
 
   if (createInfo->styleFlags & OPL_WINDOW_STYLE_FULLSCREEN) {
     [window->window toggleFullScreen: nil];
@@ -548,7 +549,6 @@ OplWindow oplWindowCreate(const OplWindowCreateInfo *createInfo) {
   [window->window setTitle:@(createInfo->title)];
   [window->window setAcceptsMouseMovedEvents:YES];
   [window->window makeFirstResponder:window->view];
-
 
   // Putting window in front on launch
   [window->window makeKeyAndOrderFront:nil];
@@ -583,21 +583,20 @@ OplWindow oplWindowCreate(const OplWindowCreateInfo *createInfo) {
   return window;
 }
 
-void oplWindowDestroy(OplWindow window) {
-  _OplCocoaWindow *cocoaWindow = (_OplCocoaWindow*)(window);
-  [cocoaWindow->window orderOut:nil];
+void oplWindowDestroy(OplWindow *window) {
+  [window->window orderOut:nil];
 
-  [cocoaWindow->window setDelegate:nil];
-  [cocoaWindow->delegate release];
+  [window->window setDelegate:nil];
+  [window->delegate release];
 
-  [cocoaWindow->view release];
-  [cocoaWindow->window close];
+  [window->view release];
+  [window->window close];
 
-  oplFree(cocoaWindow);
+  oplFree(window);
 }
 
-uint8_t oplWindowShouldClose(OplWindow window) {
-  return ((_OplCocoaWindow*)window)->shouldClose;
+uint8_t oplWindowShouldClose(OplWindow *window) {
+  return window->shouldClose;
 }
 
 const OplKeyboardState* oplKeyboardGetState() {
@@ -608,18 +607,69 @@ const OplMouseState* oplMouseGetState() {
   return &s_cocoaState.mouseState;
 }
 
-void oplWindowSetTitle(OplWindow window, const char *title) {
-  [((_OplCocoaWindow*)window)->window setTitle:@(title)];
+uint32_t oplAlertShow(const OplAlertShowInfo *info) {
+  NSAlert *alert = [[NSAlert alloc] init];
+
+  switch (info->style) {
+    case OPL_ALERT_STYLE_INFO:
+      alert.alertStyle = NSAlertStyleInformational;
+      break;
+    case OPL_ALERT_STYLE_WARN:
+      alert.alertStyle = NSAlertStyleWarning;
+      break;
+    case OPL_ALERT_STYLE_ERROR:
+      alert.alertStyle = NSAlertStyleCritical;
+      break;
+    default:
+      alert.alertStyle = NSAlertStyleInformational;
+  }
+
+  alert.accessoryView   = nil;
+  alert.showsHelp       = FALSE;
+  alert.delegate        = nil;
+  alert.messageText     =
+    [NSString stringWithCString:
+      info->title
+      encoding:NSASCIIStringEncoding
+    ];
+  alert.informativeText =
+    [NSString stringWithCString:
+      info->message
+      encoding:NSASCIIStringEncoding
+    ];
+
+  for (uint32_t i = 0; i < info->buttonCount; ++i) {
+    [alert addButtonWithTitle:
+      [NSString stringWithCString:
+        info->buttons[i].title
+        encoding:NSASCIIStringEncoding
+      ]
+    ];
+  }
+
+  NSModalResponse responce = [alert runModal];
+  [alert dealloc];
+
+  // When user provides his custom buttons the responce
+  // returns a button index + 1000
+  return responce - (info->buttonCount ? 1000 : 0); 
 }
 
-const char* oplWindowGetTitle(OplWindow window) {
-  return [((_OplCocoaWindow*)window)->window.title cStringUsingEncoding:NSASCIIStringEncoding];
+void oplWindowSetTitle(OplWindow *window, const char *title) {
+  [window->window setTitle:@(title)];
 }
 
-void oplWindowSetSize(OplWindow window, uint16_t width, uint16_t height) {
-  const NSWindow *nsWindow = ((_OplCocoaWindow*)window)->window;
+const char* oplWindowGetTitle(OplWindow *window) {
+  return [window->window.title
+            cStringUsingEncoding: NSASCIIStringEncoding];
+}
+
+void oplWindowSetSize(OplWindow *window, uint16_t width, 
+                      uint16_t height) {
+  const NSWindow *nsWindow = window->window;
   const uint16_t topBarHeight =
-    nsWindow.frame.size.height - [nsWindow contentRectForFrameRect: nsWindow.frame].size.height;
+    nsWindow.frame.size.height -
+    [nsWindow contentRectForFrameRect: nsWindow.frame].size.height;
 
   [nsWindow
     setFrame:NSMakeRect(
@@ -633,16 +683,16 @@ void oplWindowSetSize(OplWindow window, uint16_t width, uint16_t height) {
   ];
 }
 
-void oplWindowGetSize(OplWindow window, uint16_t *width, uint16_t *height) {
-  const NSWindow *nsWindow = ((_OplCocoaWindow*)window)->window;
+void oplWindowGetSize(OplWindow *window, uint16_t *width, uint16_t *height) {
+  const NSWindow *nsWindow = window->window;
   const NSSize size = [nsWindow contentRectForFrameRect: nsWindow.frame].size;
 
   *width  = (uint16_t)size.width;
   *height = (uint16_t)size.height;
 }
 
-void oplWindowSetPosition(OplWindow window, uint16_t x, uint16_t y) {
-  const NSWindow *nsWindow = ((_OplCocoaWindow*)window)->window;
+void oplWindowSetPosition(OplWindow *window, uint16_t x, uint16_t y) {
+  const NSWindow *nsWindow = window->window;
 
   [nsWindow
     setFrame:NSMakeRect(
@@ -656,37 +706,37 @@ void oplWindowSetPosition(OplWindow window, uint16_t x, uint16_t y) {
   ];
 }
 
-void oplWindowGetPosition(OplWindow window, uint16_t *x, uint16_t *y) {
+void oplWindowGetPosition(OplWindow *window, uint16_t *x, uint16_t *y) {
   // Need to invert Y on macOS, since origin is bottom-left.
-  const NSWindow *nsWindow = ((_OplCocoaWindow*)window)->window;
+  const NSWindow *nsWindow = window->window;
   *x = nsWindow.frame.origin.x;
   *y = NSScreen.mainScreen.frame.size.height -
        nsWindow.frame.size.height -
        nsWindow.frame.origin.y;
 }
 
-void oplWindowMiniaturize(OplWindow window) {
-  [((_OplCocoaWindow*)window)->window setIsMiniaturized:YES];
+void oplWindowMiniaturize(OplWindow *window) {
+  [window->window setIsMiniaturized:YES];
 }
 
-uint8_t oplWindowIsMinituarized(OplWindow window) {
-  return ((_OplCocoaWindow*)window)->window.isMiniaturized;
+uint8_t oplWindowIsMinituarized(OplWindow *window) {
+  return window->window.isMiniaturized;
 }
 
-void oplWindowMaximize(OplWindow window) {
-  [((_OplCocoaWindow*)window)->window setIsMiniaturized:NO];
+void oplWindowMaximize(OplWindow *window) {
+  [window->window setIsMiniaturized:NO];
 }
 
-uint8_t oplWindowIsMaximized(OplWindow window) {
-  return !((_OplCocoaWindow*)window)->window.isMiniaturized;
+uint8_t oplWindowIsMaximized(OplWindow *window) {
+  return !window->window.isMiniaturized;
 }
 
-void oplWindowToggleFullscreen(OplWindow window) {
-  [((_OplCocoaWindow*)window)->window toggleFullScreen: nil];
+void oplWindowToggleFullscreen(OplWindow *window) {
+  [window->window toggleFullScreen: nil];
 }
 
-uint8_t oplWindowIsFullscreen(OplWindow window) {
-  return ((_OplCocoaWindow*)window)->window.styleMask &
+uint8_t oplWindowIsFullscreen(OplWindow *window) {
+  return window->window.styleMask &
          NSWindowStyleMaskFullScreen;
 }
 
@@ -710,14 +760,8 @@ void oplPumpMessages() {
   } // autoreleasepool
 }
 
-void oplConsoleWrite(const char *message, OplColor color) {
-  // none, trace, info, warn, error, fatal
-  static const char* clrStrings[] = { "0", "1;30", "1;32", "1;33", "1;31", "0;41", };
-  printf("\033[%sm%s\033[0m", clrStrings[color], message);
-}
-
 VkResult oplCreateSurface(
-  OplWindow window, VkInstance instance,
+  OplWindow *window, VkInstance instance,
   const VkAllocationCallbacks *allocator,
   VkSurfaceKHR *surface) {
 
@@ -725,7 +769,7 @@ VkResult oplCreateSurface(
     .sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT,
     .pNext = 0,
     .flags = 0,
-    .pLayer = ((_OplCocoaWindow*)window)->metalLayer,
+    .pLayer = window->metalLayer,
   };
 
   return vkCreateMetalSurfaceEXT(instance, &info, allocator, surface);

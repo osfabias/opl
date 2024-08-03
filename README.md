@@ -3,14 +3,14 @@ OPL is an Open-Source, multi-platform library for vulkan application
 development. It provides a simple, platform-independent API for
 creating windows *(on desktop platforms)* and surfaces *(on mobile and
 console platform)*, reading user input, handling platform events,
-efficient memory management, playing audio, etc.
+efficiently manageming memory, managing threads, etc.
 
 Currently supported platforms:
+- Windows;
+- Linux (X11);
 - MacOS.
 
 Platform to be supported (SOON):
-- Linux (X11);
-- Windows;
 - Android;
 - iOS.
 

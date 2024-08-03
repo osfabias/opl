@@ -25,53 +25,6 @@
  *                  OPL types                   *
  ************************************************/
 /**
- * @brief Window flags.
- */
-typedef enum OplWindowStyleFlag {
-  OPL_WINDOW_STYLE_TITLED         = 1 << 0,
-  OPL_WINDOW_STYLE_CLOSABLE       = 1 << 1,
-  OPL_WINDOW_STYLE_RESIZABLE      = 1 << 2,
-  OPL_WINDOW_STYLE_BORDERLESS     = 1 << 3,
-  OPL_WINDOW_STYLE_FULLSCREEN     = 1 << 4,
-  OPL_WINDOW_STYLE_MINIATURIZABLE = 1 << 5,
-} OplWindowStyleFlag;
-
-/**
- * @brief Window creation info.
- *
- * @var OplWindowCreateInfo::flags
- * Window flags, used for enabling features.
- *
- * @var OplWindowCreateInfo::title
- * String to show as a title of the window.
- *
- * @var OplWindowCreateInfo::x
- * X position of the window on the display.
- *
- * @var OplWindowCreateInfo::y
- * Y position of the window on the display.
- *
- * @var OplWindowCreateInfo::width
- * The width of the window in pixels.
- *
- * @var OplWindowCreateInfo::height
- * The height of the window in pixels.
- */
-typedef struct OplWindowCreateInfo {
-  OplWindowStyleFlag styleFlags;
-  const char        *title;
-  uint16_t           x;
-  uint16_t           y;
-  uint16_t           width;
-  uint16_t           height;
-} OplWindowCreateInfo;
-
-/**
- * @brief Window handle;
- */
-typedef void* OplWindow;
-
-/**
  * @brief Key codes.
  */
 typedef enum OplKey {
@@ -277,24 +230,204 @@ typedef struct OplMouseState {
 } OplMouseState;
 
 /**
- * @brief Output color for console.
- *
- * By the way, this library was written with the intention to
- * use it with the OGE, so these colors here represents a very
- * small pallete and named as the logging levels.
+ * @brief Window flags.
  */
-typedef enum OplColor {
-  OPL_COLOR_NONE,
-  OPL_COLOR_TRACE,
-  OPL_COLOR_INFO,
-  OPL_COLOR_WARN,
-  OPL_COLOR_ERROR,
-  OPL_COLOR_FATAL,
-} OplColor;
+typedef enum OplWindowStyleFlag {
+  OPL_WINDOW_STYLE_TITLED         = 1 << 0,
+  OPL_WINDOW_STYLE_CLOSABLE       = 1 << 1,
+  OPL_WINDOW_STYLE_RESIZABLE      = 1 << 2,
+  OPL_WINDOW_STYLE_BORDERLESS     = 1 << 3,
+  OPL_WINDOW_STYLE_FULLSCREEN     = 1 << 4,
+  OPL_WINDOW_STYLE_MINIATURIZABLE = 1 << 5,
+} OplWindowStyleFlag;
+
+/**
+ * @brief Window creation info.
+ *
+ * @var OplWindowCreateInfo::flags
+ * Window flags, used for enabling features.
+ *
+ * @var OplWindowCreateInfo::title
+ * String to show as a title of the window.
+ *
+ * @var OplWindowCreateInfo::x
+ * X position of the window on the display.
+ *
+ * @var OplWindowCreateInfo::y
+ * Y position of the window on the display.
+ *
+ * @var OplWindowCreateInfo::width
+ * The width of the window in pixels.
+ *
+ * @var OplWindowCreateInfo::height
+ * The height of the window in pixels.
+ */
+typedef struct OplWindowCreateInfo {
+  OplWindowStyleFlag styleFlags;
+  const char        *title;
+  uint16_t           x;
+  uint16_t           y;
+  uint16_t           width;
+  uint16_t           height;
+} OplWindowCreateInfo;
+
+/**
+ * @brief Window handle;
+ */
+typedef struct OplWindow OplWindow;
+
+/**
+ * @brief An alert window style.
+ */
+typedef enum OplAlertStyle {
+  OPL_ALERT_STYLE_INFO,
+  OPL_ALERT_STYLE_WARN,
+  OPL_ALERT_STYLE_ERROR,
+} OplAlertStyle;
+
+/**
+ * @brief An alert window button.
+ * @var OplAlertButton::title
+ * A title of the button.
+ */
+typedef struct OplAlertButton {
+  const char *title;
+} OplAlertButton;
+
+/**
+ * @brief Alert show info.
+ *
+ * @var OplAlertShowInfo::style
+ * Alert window style.
+ *
+ * @var OplAlertShowInfo::title
+ * A title of the alert window.
+ *
+ * @var OplAlertShowInfo::message
+ * A message of the alert window.
+ *
+ * @var OplAlertShowInfo::buttonCount
+ * A button count.
+ *
+ * @var OplAlertShowInfo::buttons
+ * A pointer to an array of OplAlertButton structs.
+ */
+typedef struct OplAlertShowInfo {
+  OplAlertStyle style;
+  const char *title;
+  const char *message;
+  uint32_t buttonCount;
+  const OplAlertButton *buttons;
+} OplAlertShowInfo;
+
+/**
+ * @brief Output text style.
+ *
+ * Values are took from https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
+ */
+typedef enum OplTextStyleFlag {
+  OPL_TEXT_STYLE_NORMAL       = 1 << 0, // \033[0m
+  OPL_TEXT_STYLE_BOLD         = 1 << 1, // \033[1m
+  OPL_TEXT_STYLE_LIGHT        = 1 << 2, // \033[2m
+  OPL_TEXT_STYLE_ITALIC       = 1 << 3, // \033[3m
+  OPL_TEXT_STYLE_UNDERLINE    = 1 << 4, // \033[4m
+} OplTextStyleFlag;
+
+/**
+ * @brief Output foreground color for console.
+ *
+ * Values are took from http://en.wikipedia.org/wiki/ANSI_color#Colors.
+ */
+typedef enum OplFgColor {
+  OPL_FG_COLOR_DEFAULT        = 0,
+  OPL_FG_COLOR_BLACK          = 30,
+  OPL_FG_COLOR_RED            = 31,
+  OPL_FG_COLOR_GREEN          = 32,
+  OPL_FG_COLOR_YELLOW         = 33,
+  OPL_FG_COLOR_BLUE           = 34,
+  OPL_FG_COLOR_MAGENTA        = 35,
+  OPL_FG_COLOR_CYAN           = 36,
+  OPL_FG_COLOR_WHITE          = 37,
+  OPL_FG_COLOR_BRIGHT_BLACK   = 90,
+  OPL_FG_COLOR_BRIGHT_RED     = 91,
+  OPL_FG_COLOR_BRIGHT_GREEN   = 92,
+  OPL_FG_COLOR_BRIGHT_YELLOW  = 93,
+  OPL_FG_COLOR_BRIGHT_BLUE    = 94,
+  OPL_FG_COLOR_BRIGHT_MAGENTA = 95,
+  OPL_FG_COLOR_BRIGHT_CYAN    = 96,
+  OPL_FG_COLOR_BRIGHT_WHITE   = 97,
+} OplFgColor;
+
+/**
+ * @brief Output background color for console.
+ *
+ * Values are took from http://en.wikipedia.org/wiki/ANSI_color#Colors.
+ */
+typedef enum OplBgColor {
+  OPL_BG_COLOR_DEFAULT        = 0,
+  OPL_BG_COLOR_BLACK          = 40,
+  OPL_BG_COLOR_RED            = 41,
+  OPL_BG_COLOR_GREEN          = 42,
+  OPL_BG_COLOR_YELLOW         = 43,
+  OPL_BG_COLOR_BLUE           = 44,
+  OPL_BG_COLOR_MAGENTA        = 45,
+  OPL_BG_COLOR_CYAN           = 46,
+  OPL_BG_COLOR_WHITE          = 47,
+  OPL_BG_COLOR_BRIGHT_BLACK   = 100,
+  OPL_BG_COLOR_BRIGHT_RED     = 101,
+  OPL_BG_COLOR_BRIGHT_GREEN   = 102,
+  OPL_BG_COLOR_BRIGHT_YELLOW  = 103,
+  OPL_BG_COLOR_BRIGHT_BLUE    = 104,
+  OPL_BG_COLOR_BRIGHT_MAGENTA = 105,
+  OPL_BG_COLOR_BRIGHT_CYAN    = 106,
+  OPL_BG_COLOR_BRIGHT_WHITE   = 107,
+} OplBgColor;
+
+/**
+ * @brief File mode.
+ */
+typedef enum OplFileMode {
+  OPL_FILE_MODE_READ,
+  OPL_FILE_MODE_WRITE,
+  OPL_FILE_MODE_APPEND,
+  OPL_FILE_MODE_READ_AND_WRITE,
+  OPL_FILE_MODE_WRITE_AND_READ,
+  OPL_FILE_MODE_BINARY_READ,
+  OPL_FILE_MODE_BINARY_WRITE,
+  OPL_FILE_MODE_BINARY_APPEND,
+  OPL_FILE_MODE_BINARY_READ_AND_WRITE,
+  OPL_FILE_MODE_BINARY_WRITE_AND_READ,
+} OplFileMode;
+
+/**
+ * @brief OPL file handle.
+ */
+typedef struct OplFile OplFile;
+
+/**
+ * @brief OPL thread handle.
+ */
+typedef struct OplThread OplThread;
+
+/**
+ *
+ */
+typedef void*(*OplThreadFunc)(void *);
+
+/**
+ * @brief OPL mutex handle.
+ */
+typedef struct OplMutex OplMutex;
+
+/**
+ * @brief OPL fence handle.
+ */
+typedef struct OplFence OplFence;
 
 /************************************************
  *                    OPL API                   *
  ************************************************/
+
 /**
  * @brief Initializes OPL.
  * @return Return OPL_TRUE on successfull initialization,
@@ -329,16 +462,24 @@ const OplKeyboardState* oplKeyboardGetState();
 const OplMouseState* oplMouseGetState();
 
 /**
+ * @brief Shows an alert window.
+ * @param info A pointer to an OplAlertShowInfo struct.
+ * @return Returns an index of a button or 0, if no 
+ *         buttons were provided.
+ */
+uint32_t oplAlertShow(const OplAlertShowInfo *info);
+
+/**
  * @brief Creates a desktop window.
  * @param createInfo A pointer to OplWindowCreateInfo struct.
  * @return Returns an OPL window handle.
  */
-OplWindow oplWindowCreate(const OplWindowCreateInfo *createInfo);
+OplWindow* oplWindowCreate(const OplWindowCreateInfo *createInfo);
 
 /**
  * @brief Destroy a desktop window.
  */
-void oplWindowDestroy(OplWindow window);
+void oplWindowDestroy(OplWindow *window);
 
 /**
  * @brief Returns wheter should window close or not.
@@ -346,21 +487,21 @@ void oplWindowDestroy(OplWindow window);
  * @return Returns OPL_TRUE if window closing was requested,
  * otherwise returns OPL_FALSE.
  */
-uint8_t oplWindowShouldClose(OplWindow window);
+uint8_t oplWindowShouldClose(OplWindow *window);
 
 /**
  * @brief Sets window's title.
  * @param window An OPL window handle.
  * @param title A title to set.
  */
-void oplWindowSetTitle(OplWindow window, const char *title);
+void oplWindowSetTitle(OplWindow *window, const char *title);
 
 /**
  * @brief Returns window's title.
  * @param window An OPL window handle.
  * @return Returns a pointer to a window title.
  */
-const char* oplWindowGetTitle(OplWindow window);
+const char* oplWindowGetTitle(OplWindow *window);
 
 /**
  * @brief Sets window's size.
@@ -368,7 +509,7 @@ const char* oplWindowGetTitle(OplWindow window);
  * @param width A width in pixels.
  * @param height A height in pixels.
  */
-void oplWindowSetSize(OplWindow window, uint16_t width, uint16_t height);
+void oplWindowSetSize(OplWindow *window, uint16_t width, uint16_t height);
 
 /**
  * @brief Returns window size.
@@ -376,7 +517,7 @@ void oplWindowSetSize(OplWindow window, uint16_t width, uint16_t height);
  * @param width A pointer to a variable, that will hold a window's width.
  * @param width A pointer to a variable, that will hold a window's height.
  */
-void oplWindowGetSize(OplWindow window, uint16_t *width, uint16_t *height);
+void oplWindowGetSize(OplWindow *window, uint16_t *width, uint16_t *height);
 
 /**
  * @brief Sets window position.
@@ -384,7 +525,7 @@ void oplWindowGetSize(OplWindow window, uint16_t *width, uint16_t *height);
  * @param x Window x position.
  * @param y Window y position.
  */
-void oplWindowSetPosition(OplWindow window, uint16_t x, uint16_t y);
+void oplWindowSetPosition(OplWindow *window, uint16_t x, uint16_t y);
 
 /**
  * @brief Returns window position.
@@ -392,13 +533,13 @@ void oplWindowSetPosition(OplWindow window, uint16_t x, uint16_t y);
  * @param x A pointer to a variable, that will hold a window's x position.
  * @param y A pointer to a variable, that will hold a window's y position.
  */
-void oplWindowGetPosition(OplWindow window, uint16_t *x, uint16_t *y);
+void oplWindowGetPosition(OplWindow *window, uint16_t *x, uint16_t *y);
 
 /**
  * @brief Minituarizes window.
  * @param window An OPL window handle.
  */
-void oplWindowMiniaturize(OplWindow window);
+void oplWindowMiniaturize(OplWindow *window);
 
 /**
  * @brief Returns wheter window is miniaturized or not.
@@ -406,13 +547,13 @@ void oplWindowMiniaturize(OplWindow window);
  * @return Returns OPL_TRUE if window miniaturized or
  *         OPL_FALSE if it's not.
  */
-uint8_t oplWindowIsMinituarized(OplWindow window);
+uint8_t oplWindowIsMinituarized(OplWindow *window);
 
 /**
  * @brief Maximized window.
  * @param window An OPL window handle.
  */
-void oplWindowMaximize(OplWindow window);
+void oplWindowMaximize(OplWindow *window);
 
 /**
  * @brief Returns wheter window is maximized or not.
@@ -420,13 +561,13 @@ void oplWindowMaximize(OplWindow window);
  * @return Returns OPL_TRUE if window maximized or
  *         OPL_FALSE if it's not.
  */
-uint8_t oplWindowIsMaximized(OplWindow window);
+uint8_t oplWindowIsMaximized(OplWindow *window);
 
 /**
  * @brief Toggles fullscreen mode for a window.
  * @param window An OPL window handle.
  */
-void oplWindowToggleFullscreen(OplWindow window);
+void oplWindowToggleFullscreen(OplWindow *window);
 
 /**
  * @brief Return wheter a window in fullscreen mode or not.
@@ -434,52 +575,282 @@ void oplWindowToggleFullscreen(OplWindow window);
  * @return Returns OPL_TRUE if window in fullscreen mode
  *         or OPL_FALSE if it's not.
  */
-uint8_t oplWindowIsFullscreen(OplWindow window);
+uint8_t oplWindowIsFullscreen(OplWindow *window);
 
 /**
- * @brief Allocates a block of memory of the given size.
+ * @brief Allocates a memory block of of the given size.
+ * @param size A size of the memory block in bytes.
+ * @return Returns a pointer to a memory block if allocation
+ *         was successfull, otherwise return a NULL.
  */
 void* oplAlloc(uint64_t size);
 
 /**
- * @brief Reallocates a block of memory to the given size.
+ * @brief Reallocates a memory block to the given size.
+ * @param block A pointer to a memory block.
+ * @param size A new size of a memory block in bytes.
+ * @return Returns a pointer to a memory block if allocation
+ *         was successfull, otherwise return a NULL.
  */
 void* oplRealloc(void *block, uint64_t size);
 
 /**
- * @brief Frees a block of memory.
+ * @brief Frees a memory block.
+ * @param A pointer to a memory block.
  */
-void  oplFree(void *block);
+void oplFree(void *block);
 
 /**
- * @bried Copies a block of memory.
+ * @bried Copies a memory block.
+ * @param dst A pointer to a destination memory block.
+ * @param dst A pointer to a source memory block.
+ * @param size A size of a memory block to copy in bytes.
  */
 void oplMemCpy(void *dst, const void *src, uint64_t size);
 
 /**
  * @brief Sets a block of memory to a given value.
+ * @param block A pinter to a memory block.
+ * @param value A value to set.
+ * @param size A size of a memory block to set value to.
  */
 void oplMemSet(void *block, int32_t value, uint64_t size);
 
 /**
  * @brief Moves a block of memory.
+ * @param dst A pointer to a destination memory block.
+ * @param dst A pointer to a source memory block.
+ * @param size A size of a memory block to move in bytes.
  */
 void oplMemMove(void *dst, const void *src, uint64_t size);
 
 /**
- * @brief Compares two block of memory. */
+ * @brief Compares two block of memory.
+ * @param block1 A pointer to a first memory block.
+ * @param block1 A pointer to a sefence memory block.
+ * @param size A size of a memory block to compare in bytes.
+ */
 int32_t oplMemCmp(const void *block1, const void *block2,
                   uint64_t size);
 
 /**
- * @brief Writes colorized text to console.
+ * @brief Sets console output style.
+ * @param textStyle A text style.
  */
-void oplConsoleWrite(const char *message, OplColor color);
+void oplConsoleSetTextStyle(OplTextStyleFlag textStyleFlags);
 
 /**
- * @brief Returns amount of milliseconds past since the unix epoch.
+ * @brief Sets console output color.
+ * @param fgColor A foreground color of the message.
+ * @param bgColor A background color of the message.
  */
-uint64_t oplGetTime();
+void oplConsoleSetColor(OplFgColor fgColor, OplBgColor bgColor);
+
+/**
+ * @brief Writes colorized text to console.
+ * @param message A pointer to a message to write to console.
+ */
+void oplConsoleWrite(const char *message, ...);
+
+/**
+ * @brief Reads formatted input from console.
+ * @param string A pointer to a string to write extracted
+ *               characters from the stream to. 
+ * @param bufferLimit A limit of characters to extract.
+ */
+void oplConsoleRead(char *string, uint64_t bufferLimit);
+
+/**
+ * @brief Reads formatted input from console.
+ * @param format A string that that control how characters
+ *               extracted from the stream are treated.
+ * @param ... VA arguments.
+ */
+void oplConsoleReadFormatted(const char *format, ...);
+
+/**
+ * @brief Opens a file.
+ */
+OplFile* oplFileOpen(const char *path, OplFileMode mode);
+
+/**
+ * @brief Closes a file.
+ */
+uint8_t oplFileClose(OplFile *file);
+
+/**
+ * @brief Checks if file cursor at the end.
+ */
+uint8_t oplFileIsEof(OplFile *file);
+
+/**
+ * @brief Checks if file exists.
+ */
+uint8_t oplFileIsExist(const char *path);
+
+/**
+ * @brief Returs a size of a file in bytes.
+ */
+uint64_t oplFileSize(OplFile *file);
+
+/**
+ * @brief Sets a file cursos position.
+ */
+uint8_t oplFileCursorSetPosition(OplFile *file, uint32_t position);
+
+/**
+ * @brief Returns a file cursos position.
+ */
+uint32_t oplFileCursorGetPosition(OplFile *file);
+
+/**
+ * @brief Sets a file cursor position to the
+ *        end of the file.
+ */
+uint8_t oplFileCursorJumpEnd(OplFile *file);
+
+/**
+ * @brief Reads a whole file.
+ */
+uint8_t oplFileRead(OplFile *file, uint64_t size,
+                    char *out);
+
+/**
+ * @brief Reads a character from a file.
+ */
+uint8_t oplFileReadChar(OplFile *file, char *out);
+
+/**
+ * @brief Reads a line from a file.
+ */
+uint8_t oplFileReadLine(OplFile *file, uint64_t bufferLimit,
+                        char *out);
+
+/**
+ * @brief
+ */
+uint8_t oplFileReadFormatted(OplFile *file,
+                             const char *format, ...);
+
+/**
+ * @brief
+ */
+uint8_t oplFileWrite(OplFile *file, uint64_t size,
+                     void *in);
+
+/**
+ * @brief Writes a character into a file.
+ */
+uint8_t oplFileWriteChar(OplFile *file, char *in);
+
+/**
+ * @brief Writes a string into a file.
+ */
+uint8_t oplFileWriteString(OplFile *file, char *in);
+
+/**
+ * @brief
+ */
+uint8_t oplFileWriteFormatted(OplFile *file,
+                              const char *format, ...);
+
+/**
+ * @brief Creates an OPL thread.
+ */
+OplThread* oplThreadCreate(OplThreadFunc func, void *data);
+
+/**
+ * @brief Destroys an OPL thread.
+ */
+void oplThreadDestroy (OplThread *thread);
+
+/**
+ * @brief
+ */
+uint8_t oplThreadJoin(OplThread *thread, void *out);
+
+/**
+ * @brief 
+ */
+#define oplThreadWait(thread) oplThreadJoin(thread, 0)
+
+/**
+ * @brief
+ */
+uint8_t oplThreadDetach(OplThread *thread);
+
+/**
+ * @brief Exits an OPL thread.
+ */
+void oplThreadExit(void *data);
+
+/**
+ * @brief Returns an OPL thread handle of the
+ *        thread where this function was executed.
+ */
+OplThread* oplThreadSelf();
+
+/**
+ * @brief Sleeps on a current thread.
+ * @param millisefences A number of milliseconds to sleep.
+ */
+uint8_t oplThreadSleep(uint64_t millisefences);
+
+/**
+ * @brief Creates an OPL mutex.
+ */
+OplMutex* oplMutexCreate();
+
+/**
+ * @brief Destroys an OPL mutex.
+ */
+void oplMutextDestroy(OplMutex *mutex);
+
+/**
+ * @brief Locks an OPL mutex.
+ */
+void oplMutexLock(OplMutex *mutex);
+
+/**
+ * @brief Tries to lock an OPL mutex.
+ */
+uint8_t oplMutexTryLock(OplMutex *mutex);
+
+/**
+ * @brief Unlocks an OPL mutex.
+ */
+void oplMutexUnlock(OplMutex *mutex);
+
+/**
+ * @brief Create an OPL fence.
+ */
+OplFence* oplFenceCreate();
+
+/**
+ * @brief Destroys an OPL fence.
+ */
+void oplFenceDestroy(OplFence *fence);
+
+/**
+ * @brief Signals an OPL fence.
+ */
+void oplFenceSignal(OplFence *fence);
+
+/**
+ * @brief Broadcasts an OPL fence.
+ */
+void oplFenceBroadcast(OplFence *fence);
+
+/**
+ * @brief Wait for an OPL fence to get open.
+ */
+void oplFenceWait(OplFence *fence, OplMutex *mutex);
+
+/**
+ * @brief Returns amount of millisefences past
+ *        since the unix epoch.
+ */
+uint64_t oplGetAbsoluteTime();
 
 /************************************************
  *                   Vulkan                     *
@@ -488,7 +859,7 @@ uint64_t oplGetTime();
  * @brief Creates Vulkan surface.
  */
 VkResult oplCreateSurface(
-  OplWindow window, VkInstance instance,
+  OplWindow *window, VkInstance instance,
   const VkAllocationCallbacks *allocator,
   VkSurfaceKHR *surface);
 

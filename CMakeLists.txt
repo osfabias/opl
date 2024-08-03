@@ -20,17 +20,19 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# ~ printing info
-message(STATUS "==== OPL info ====")
-message(STATUS "lib type: static")
-message(STATUS "version:  ${OPL_VERSION}")
-
 # ~ detecting standalone build
 set(OPL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 string(COMPARE EQUAL "${CMAKE_CURRENT_SOURCE_DIR}" "${OPL_SOURCE_DIR}" OPL_STANDALONE)
 
 # ~ defining options
-option(OPL_BUILD_EXAMPLE "Build the opl example program" ${OPL_STANDALONE})
+option(OPL_BUILD_EXAMPLES "Build the opl example programs" ${OPL_STANDALONE})
+
+# ~ printing info
+message(STATUS "==== OPL info ====")
+message(STATUS "lib type: static")
+message(STATUS "version:  ${OPL_VERSION}")
+message(STATUS "OPL_BUILD_EXAMPLES:  ${OPL_BUILD_EXAMPLES}")
+
 
 #####################################################
 #                    target setup                   #
@@ -58,8 +60,11 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
   target_sources(opl PRIVATE
     ./src/x11-platform.c
+    ./src/posix-file.c
     ./src/posix-time.c
+    ./src/posix-thread.c
     ./src/posix-memory.c
+    ./src/posix-console.c
   )
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin") # MACOS
   find_library(COCOA_LIBRARY Cocoa)
@@ -71,12 +76,15 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin") # MACOS
 
   target_sources(opl PRIVATE
     ./src/cocoa-platform.m
+    ./src/posix-file.c
     ./src/cocoa-time.c
+    ./src/posix-thread.c
     ./src/posix-memory.c
+    ./src/posix-console.c
   )
 endif()
 
 # ~ example programm
-if (OPL_BUILD_EXAMPLE)
-  add_subdirectory(example)
+if (OPL_BUILD_EXAMPLES)
+  add_subdirectory(examples)
 endif()
