@@ -46,8 +46,11 @@ target_include_directories(opl PUBLIC include)
 
 # ~ platform-specific source files
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-  message(FATAL_ERROR "Windows platform not implemented.")
-  # Add source files here instead of "message()" call
+  target_sources(opl PRIVATE
+    ./src/win32-platform.c
+    ./src/posix-time.c
+    ./src/posix-memory.c
+  )
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   find_package(X11 REQUIRED)
 
@@ -57,7 +60,6 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     ./src/x11-platform.c
     ./src/posix-time.c
     ./src/posix-memory.c
-    ./src/posix-thread.c
   )
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin") # MACOS
   find_library(COCOA_LIBRARY Cocoa)
@@ -71,7 +73,6 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin") # MACOS
     ./src/cocoa-platform.m
     ./src/cocoa-time.c
     ./src/posix-memory.c
-    ./src/posix-thread.c
   )
 endif()
 

@@ -671,7 +671,6 @@ void oplWindowMiniaturize(OplWindow window) {
 
 uint8_t oplWindowIsMinituarized(OplWindow window) {
   return ((_OplCocoaWindow*)window)->window.isMiniaturized;
-  return OPL_FALSE;
 }
 
 void oplWindowMaximize(OplWindow window) {
@@ -680,7 +679,6 @@ void oplWindowMaximize(OplWindow window) {
 
 uint8_t oplWindowIsMaximized(OplWindow window) {
   return !((_OplCocoaWindow*)window)->window.isMiniaturized;
-  return OPL_FALSE;
 }
 
 void oplWindowToggleFullscreen(OplWindow window) {
@@ -714,7 +712,7 @@ void oplPumpMessages() {
 
 void oplConsoleWrite(const char *message, OplColor color) {
   // none, trace, info, warn, error, fatal
-  const char* clrStrings[] = { "0", "1;30", "1;32", "1;33", "1;31", "0;41", };
+  static const char* clrStrings[] = { "0", "1;30", "1;32", "1;33", "1;31", "0;41", };
   printf("\033[%sm%s\033[0m", clrStrings[color], message);
 }
 

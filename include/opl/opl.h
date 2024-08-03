@@ -1,7 +1,7 @@
 /**
-   * @file opl.h
-   * @brief The header of the OPL API
-   */
+ * @file opl.h
+ * @brief The header of the OPL API
+ */
 #pragma once
 
 #include <stdint.h>        // for const size types
@@ -24,7 +24,6 @@
 /************************************************
  *                  OPL types                   *
  ************************************************/
-
 /**
  * @brief Window flags.
  */
@@ -481,15 +480,6 @@ void oplConsoleWrite(const char *message, OplColor color);
  * @brief Returns amount of milliseconds past since the unix epoch.
  */
 uint64_t oplGetTime();
-
-/**
- * @brief Sleeps on current thread for the given amount of
- * milliseconds.
- *
- * Should only be used for giving time back to the OS for
- * unused update power in order not to use 100% of cpu.
- */
-void oplSleep(uint64_t ms);
 
 /************************************************
  *                   Vulkan                     *

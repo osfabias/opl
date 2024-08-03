@@ -209,7 +209,7 @@ uint8_t oplWindowIsFullscreen(OplWindow window) {
 
 void oplConsoleWrite(const char *message, OplColor color) {
   // none, trace, info, warn, error, fatal
-  const char* clrStrings[] = { "0", "1;30", "1;32", "1;33", "1;31", "0;41", };
+  static const char* clrStrings[] = { "0", "1;30", "1;32", "1;33", "1;31", "0;41", };
   printf("\033[%sm%s\033[0m", clrStrings[color], message);
 }
 

@@ -1,2 +1,2 @@
-add_executable(2windows 2windows.c)
-target_link_libraries(2windows PRIVATE opl)
+add_executable(window-creation window-creation.c)
+target_link_libraries(window-creation PRIVATE opl)
