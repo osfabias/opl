@@ -397,12 +397,18 @@ typedef enum OplFileMode {
   OPL_FILE_MODE_BINARY_APPEND,
   OPL_FILE_MODE_BINARY_READ_AND_WRITE,
   OPL_FILE_MODE_BINARY_WRITE_AND_READ,
+  OPL_FILE_MODE_TEMP,
 } OplFileMode;
 
 /**
  * @brief OPL file handle.
  */
 typedef struct OplFile OplFile;
+
+/** 
+ * @brief OPL directory handle.
+ */
+typedef struct OplDir OplDir;
 
 /**
  * @brief OPL thread handle.
@@ -669,6 +675,11 @@ void oplConsoleRead(char *string, uint64_t bufferLimit);
 void oplConsoleReadFormatted(const char *format, ...);
 
 /**
+ * @brief Checks if the path points to a file.
+ */
+uint8_t oplIsFile(const char *path);
+
+/**
  * @brief Opens a file.
  */
 OplFile* oplFileOpen(const char *path, OplFileMode mode);
@@ -682,6 +693,27 @@ uint8_t oplFileClose(OplFile *file);
  * @brief Checks if file cursor at the end.
  */
 uint8_t oplFileIsEof(OplFile *file);
+
+/**
+ * @brief Renames the file.
+ */
+uint8_t oplFileRename(const char *oldPath, const char *newPath);
+
+/**
+ * @brief Deletes the file.
+ */
+uint8_t oplFileDelete(const char *path);
+
+/**
+ * @brief Copies a file.
+ */
+uint8_t oplFileCopy(OplFile *dstFile, const OplFile *srcFile);
+
+/**
+ * @brief Copies a file.
+ */
+uint8_t oplFileCopyByPath(const char *dstPath,
+                          const char *srcPath);
 
 /**
  * @brief Checks if file exists.
@@ -712,8 +744,8 @@ uint8_t oplFileCursorJumpEnd(OplFile *file);
 /**
  * @brief Reads a whole file.
  */
-uint8_t oplFileRead(OplFile *file, uint64_t size,
-                    char *out);
+uint32_t oplFileRead(OplFile *file, uint32_t size,
+                    uint32_t count, char *out);
 
 /**
  * @brief Reads a character from a file.
@@ -735,8 +767,8 @@ uint8_t oplFileReadFormatted(OplFile *file,
 /**
  * @brief
  */
-uint8_t oplFileWrite(OplFile *file, uint64_t size,
-                     void *in);
+uint32_t oplFileWrite(OplFile *file, uint32_t size,
+                     uint32_t count, void *in);
 
 /**
  * @brief Writes a character into a file.
@@ -753,6 +785,67 @@ uint8_t oplFileWriteString(OplFile *file, char *in);
  */
 uint8_t oplFileWriteFormatted(OplFile *file,
                               const char *format, ...);
+
+/**
+ * @brief Check if path points to a 
+ *        dir.
+ */
+uint8_t oplIsDir(const char *path);
+
+/**
+ * @brief
+ */
+OplDir* oplDirOpen(const char *path);
+
+/**
+ * @brief Closes a directory.
+ */
+uint8_t oplDirClose(OplDir *dir);
+
+/**
+ * @brief Create a directory.
+ */
+uint8_t oplDirCreate(const char *path);
+
+/**
+ * @brief Deletes a directory.
+ */
+uint8_t oplDirDelete(const char *path);
+
+/**
+ * @brief Renames a directory.
+ */
+#define oplDirRename(oldPath, newPath) \
+  oplFileRename(oldPath, newPath)
+
+/**
+ * @brief
+ */
+uint8_t oplDirRead(OplDir *dir, char *out);
+
+/**
+ * @brief
+ */
+void oplDirCursorSetPos(OplDir *dir, uint32_t pos);
+
+/**
+ * @brief
+ */
+uint32_t oplDirCursorGetPos(OplDir *dir);
+
+/**
+ * @brief Returns an array of all files and directories in
+ *        directory.
+ */
+uint32_t oplDirList(const char *path, uint32_t bufferLimit,
+                    const char* *paths);
+
+/**
+ * @brief Returns an array of all files in specified directory
+ *        and in subdirectories.
+ */
+uint32_t oplDirListRecurse(const char *path, uint32_t bufferLimit,
+                           char paths[][1024]);
 
 /**
  * @brief Creates an OPL thread.

@@ -10,5 +10,8 @@ target_link_libraries(console PRIVATE opl)
 add_executable(files files.c)
 target_link_libraries(files PRIVATE opl)
 
+add_executable(dirs dirs.c)
+target_link_libraries(dirs PRIVATE opl)
+
 add_executable(threads threads.c)
 target_link_libraries(threads PRIVATE opl)
