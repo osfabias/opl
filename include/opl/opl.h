@@ -339,7 +339,7 @@ typedef enum OplTextStyleFlag {
  * Values are took from http://en.wikipedia.org/wiki/ANSI_color#Colors.
  */
 typedef enum OplFgColor {
-  OPL_FG_COLOR_DEFAULT        = 0,
+  OPL_FG_COLOR_DEFAULT        = 37,
   OPL_FG_COLOR_BLACK          = 30,
   OPL_FG_COLOR_RED            = 31,
   OPL_FG_COLOR_GREEN          = 32,
@@ -364,7 +364,7 @@ typedef enum OplFgColor {
  * Values are took from http://en.wikipedia.org/wiki/ANSI_color#Colors.
  */
 typedef enum OplBgColor {
-  OPL_BG_COLOR_DEFAULT        = 0,
+  OPL_BG_COLOR_DEFAULT        = 10,
   OPL_BG_COLOR_BLACK          = 40,
   OPL_BG_COLOR_RED            = 41,
   OPL_BG_COLOR_GREEN          = 42,
