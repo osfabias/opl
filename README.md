@@ -34,11 +34,11 @@ cmake -DOPL_BUILD_EXAMPLE=ON .. # add -DCMAKE_BUILD_TYPE=Debug for debug build
 cmake --build .
 ```
 
-### 3. Start binary.
+### 3. Try run examples.
 ```shell
 # from opl/build/
 cd bin
-./example
+./window-creation
 ```
 
 You're done!
