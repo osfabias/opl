@@ -1,9 +1,7 @@
 # Osfabias Platform Layer
-OPL is an Open-Source, multi-platform library for vulkan application 
-development. It provides a simple, platform-independent API for
-creating windows *(on desktop platforms)* and surfaces *(on mobile and
-console platform)*, reading user input, handling platform events,
-efficiently manageming memory, managing threads, etc.
+OPL is an Open-Source, multi-platform library for Vulkan applications.
+It provides simple, platform-independent API for creating windows and
+surfaces and reading user input.
 
 Currently supported platforms:
 - Windows;
@@ -17,14 +15,20 @@ Platform to be supported ( SOON :3 ):
 - XBox;
 - Nintendo Switch.
 
-# How to build
 ## Requirements:
 - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) (latest version)[*](https://github.com/osfabias/opl/issues/1)
 - CMake (version 2.16+)
 
+# How to use
+```cmake
+add_subdirectory(opl)
+target_link_library(<target> <mode> opl)
+```
+
+# How to build
 ### 1. Clone project.
 ```shell
-git clone git@github.com:osfabias/opl.git # stop using html, okay!?
+git clone git@github.com:osfabias/opl.git
 cd opl
 ```
 
@@ -33,7 +37,8 @@ cd opl
 # from opl/
 mkdir build
 cd build
-cmake -DOPL_BUILD_EXAMPLE=ON .. # add -DCMAKE_BUILD_TYPE=Debug for debug build
+# add -DCMAKE_BUILD_TYPE=Debug for debug build
+cmake ..
 cmake --build .
 ```
 
@@ -45,7 +50,6 @@ cd bin
 ```
 
 You're done!
-
 # Documentation
 ```shell
 # from opl/
