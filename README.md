@@ -22,7 +22,7 @@ Platform to be supported ( SOON :3 ):
 # How to use
 ```cmake
 add_subdirectory(opl)
-target_link_library(<target> <mode> opl)
+target_link_libraries(<target> <mode> opl)
 ```
 
 # How to build
