@@ -215,8 +215,8 @@ typedef enum opl_key {
  * @brief Keyboard state.
  *
  * @var opl_keyboard_state::keys
- * An array of integers that represents key states. true represents 
- * that the key is down and false represents that the key is up. The 
+ * An array of integers that represents key states. 1 represents 
+ * that the key is down and 0 represents that the key is up. The 
  * index of each element corresponds to it's key code defined in
  * opl_key_t enum. The value of elements which indices not presented in 
  * the opl_key_t enum is undefined.
@@ -489,7 +489,7 @@ const opl_keyboard_state* opl_keyboard_get_state(void);
  */
 const opl_mouse_state* opl_mouse_get_state(void);
 
-#ifdef OE_INCLUDE_VULKAN
+#ifdef OPL_INCLUDE_VULKAN
 #include <vulkan/vulkan.h>
 
 /**
