@@ -521,25 +521,6 @@ void opl_update(void) {
   } // autoreleasepool
 }
 
-
-
-struct opl_window* opl_window_open(
-  int              width,
-  int              height,
-  const char      *title
-) {
-  return opl_window_open_ext(
-    width,
-    height,
-    title,
-    (NSScreen.mainScreen.frame.size.width  - width)  / 2,
-    (NSScreen.mainScreen.frame.size.height - height) / 2,
-    OPL_WINDOW_HINT_TITLED_BIT |
-    OPL_WINDOW_HINT_CLOSABLE_BIT |
-    OPL_WINDOW_HINT_MINIATURIZABLE_BIT
-  );
-}
-
 opl_window_t opl_window_open_ext(
   int                width,
   int                height,
@@ -667,10 +648,6 @@ const opl_keyboard_state_t* opl_keyboard_get_state(void) {
 
 const opl_mouse_state_t* opl_mouse_get_state(void) {
   return &s_opl_state.mouse_state;
-}
-
-void opl_alert(const char *title, const char *text) {
-  opl_alert_ext(title, text, OPL_ALERT_STYLE_ERROR, 0, NULL);
 }
 
 int opl_alert_ext(

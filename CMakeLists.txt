@@ -16,10 +16,6 @@ project(opl VERSION ${OPL_VERSION} LANGUAGES C)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # for clangd
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
 # ~ detecting standalone build
 set(OPL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${OPL_SOURCE_DIR}" OPL_STANDALONE)
@@ -48,9 +44,9 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   find_package(X11 REQUIRED)
 
-  target_link_libraries(opl PUBLIC ${X11_LIBRARIES})
-
   add_library(opl STATIC ./src/x11.c)
+
+  target_link_libraries(opl PUBLIC ${X11_LIBRARIES})
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin") # MACOS
   find_library(COCOA_LIBRARY Cocoa)
   find_library(QUARTZ_LIBRARY QuartzCore)

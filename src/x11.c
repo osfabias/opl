@@ -1,69 +1,71 @@
-#include <stdio.h>
+#include <stdlib.h>
 
 #include <X11/Xlib.h>
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_xlib.h>
 
-#include "opl/opl.h"
+#define OPL_INCLUDE_VULKAN
+#include "opl.h"
 
-typedef struct _OplX11Window {
-  Window window;
-  uint8_t shouldClose;
-} _OplX11Window;
+struct opl_window {
+  Window  window;
+  int     should_close;
+};
 
 static struct {
-  uint8_t initialized;
   Display *display;
-  int screenIndex;
-  Window rootWindow;
+  int      screen_ind;
+  Screen  *screen;
+  Window   root_window;
 
-  OplMouseState mouseState;
-  OplKeyboardState keyboardState;
-} s_x11State = { .initialized = OPL_FALSE };
+  opl_mouse_state_t    mouse_state;
+  opl_keyboard_state_t keyboard_state;
+} s_opl_state;
 
-uint8_t oplInit() {
-  if (s_x11State.initialized) { return OPL_TRUE; }
-
-  s_x11State.display = XOpenDisplay(0);
-  if (!s_x11State.display) { return OPL_FALSE; }
+int opl_init(void) {
+  s_opl_state.display = XOpenDisplay(0);
+  if (!s_opl_state.display) { return 0; }
 
   // Get default screen and root window
-  s_x11State.screenIndex = XDefaultScreen(s_x11State.display);
-  s_x11State.rootWindow = RootWindow(s_x11State.display, s_x11State.screenIndex);
+  s_opl_state.screen_ind  = XDefaultScreen(s_opl_state.display);
+  s_opl_state.root_window = RootWindow(
+    s_opl_state.display,
+    s_opl_state.screen_ind
+  );
 
-  s_x11State.initialized = OPL_TRUE;
+  s_opl_state.screen = XScreenOfDisplay(
+    s_opl_state.display,
+    s_opl_state.screen_ind
+  );
 
-  return OPL_TRUE;
+  return 1;
 }
 
-void oplTerminate() {
-  if (!s_x11State.initialized) { return; }
-
-  XCloseDisplay(s_x11State.display);
-  s_x11State.initialized = OPL_FALSE;
+void opl_quit(void) {
+  XCloseDisplay(s_opl_state.display);
 }
 
-void oplPumpMessages() {
+void opl_update(void) {
   XEvent event;
 
-  while (!XNextEvent(s_x11State.display, &event)) {
+  while (!XNextEvent(s_opl_state.display, &event)) {
     switch (event.type) {
       case KeyPress:
-        s_x11State.keyboardState.keys[event.xkey.keycode] = 1;
+        s_opl_state.keyboard_state.keys[event.xkey.keycode] = 1;
         break;
       case KeyRelease:
-        s_x11State.keyboardState.keys[event.xkey.keycode] = 0;
+        s_opl_state.keyboard_state.keys[event.xkey.keycode] = 0;
         break;
       case ButtonPress:
-        s_x11State.mouseState.buttons[event.xbutton.button] = 1;
+        s_opl_state.mouse_state.btns[event.xbutton.button] = 1;
         break;
       case ButtonRelease:
-        s_x11State.mouseState.buttons[event.xbutton.button] = 0;
+        s_opl_state.mouse_state.btns[event.xbutton.button] = 0;
         break;
       case MotionNotify:
-        s_x11State.mouseState.x = event.xbutton.x;
-        s_x11State.mouseState.y = event.xbutton.y;
+        s_opl_state.mouse_state.x = event.xbutton.x;
+        s_opl_state.mouse_state.y = event.xbutton.y;
         break;
       case Expose:
         break;
@@ -71,21 +73,32 @@ void oplPumpMessages() {
   }
 }
 
-const OplKeyboardState* oplKeyboardGetState() {
-  return &s_x11State.keyboardState;
+opl_window_t opl_window_open(int width, int height, const char *title) {
+  return opl_window_open_ext(
+    width,
+    height,
+    title,
+    WidthOfScreen(s_opl_state.screen) / 2,
+    HeightOfScreen(s_opl_state.screen) / 2,
+    0
+  );
 }
 
-const OplMouseState* oplMouseGetState() {
-  return &s_x11State.mouseState;
-}
+opl_window_t opl_window_open_ext(
+  int width,
+  int height,
+  const char *title,
+  int x,
+  int y,
+  opl_window_hint_t hints
+) {
+  struct opl_window *window = malloc(sizeof(struct opl_window));
+  window->should_close = 0;
 
-OplWindow oplWindowCreate(const OplWindowCreateInfo *createInfo) {
-  _OplX11Window *window = oplAlloc(sizeof(_OplX11Window));
-  window->shouldClose = OPL_FALSE;
+  (void)(hints);
+  // #warning "OPL window style flags aren't used"
 
-  #warning "oplWindowCreate(): OPL window style flags aren't used"
-
-  XSetWindowAttributes windowAttributes = {
+  XSetWindowAttributes attrs = {
     .background_pixmap     = ParentRelative,
     .background_pixel      = 0xff101010, // #101010 ~ kinda black
     .border_pixmap         = CopyFromParent,
@@ -101,137 +114,162 @@ OplWindow oplWindowCreate(const OplWindowCreateInfo *createInfo) {
     .backing_planes        = 0,
     .override_redirect     = False,
     .do_not_propagate_mask = 0,
-    .colormap              = DefaultColormap(s_x11State.display,
-                                             s_x11State.screenIndex),
+    .colormap              = DefaultColormap(s_opl_state.display,
+                                             s_opl_state.screen_ind),
     .cursor                = None,
   };
 
   window->window = XCreateWindow(
-    s_x11State.display,
-    s_x11State.rootWindow,
-    createInfo->x,
-    createInfo->y,
-    createInfo->width,
-    createInfo->height,
+    s_opl_state.display,
+    s_opl_state.root_window,
+    0,
+    0,
+    width,
+    height,
     1, // Border size
-    DefaultDepth(s_x11State.display, s_x11State.screenIndex),
+    DefaultDepth(s_opl_state.display, s_opl_state.screen_ind),
     InputOutput,
-    DefaultVisual(s_x11State.display, s_x11State.screenIndex),
-    CWBackPixel | CWBorderPixel | CWWinGravity | CWEventMask |
-    CWColormap,
-    &windowAttributes
+    DefaultVisual(s_opl_state.display, s_opl_state.screen_ind),
+    CWBackPixel | CWBorderPixel | CWWinGravity |
+    CWEventMask | CWColormap,
+    &attrs
   );
 
   if (!window->window) { return 0; }
-  XStoreName(s_x11State.display, window->window, createInfo->title);
+  XStoreName(s_opl_state.display, window->window, title);
 
   // Map window (needs to be done for window to be displayed)
-  XMapWindow(s_x11State.display, window->window);
+  XMapWindow(s_opl_state.display, window->window);
+
+  XMoveWindow(
+    s_opl_state.display,
+    window->window,
+    x - width / 2,
+    y - height / 2
+  );
 
   return window;
 }
 
-void oplWindowDestroy(OplWindow window) {
-  const _OplX11Window *x11Window = ((_OplX11Window*)window);
-
-  XUnmapWindow(s_x11State.display, x11Window->window);
-  XDestroyWindow(s_x11State.display, x11Window->window);
-
-  oplFree(window);
+void opl_window_close(opl_window_t window) {
+  XUnmapWindow(s_opl_state.display, window->window);
+  XDestroyWindow(s_opl_state.display, window->window);
+  free(window);
 }
 
-uint8_t oplWindowShouldClose(OplWindow window) {
-  return ((_OplX11Window*)window)->shouldClose;
+int opl_window_should_close(opl_window_t window) {
+  return window->should_close;
 }
 
-void oplWindowSetTitle(OplWindow window, const char *title) {
-  XStoreName(s_x11State.display, ((_OplX11Window*)window)->window, title);
+void opl_window_set_title(opl_window_t window, const char *title) {
+  XStoreName(s_opl_state.display, window->window, title);
 }
 
-const char* oplWindowGetTitle(OplWindow window) {
+const char* opl_window_get_title(opl_window_t window) {
   char *title;
-  XFetchName(s_x11State.display, ((_OplX11Window*)window)->window, &title);
+  XFetchName(s_opl_state.display, window->window, &title);
   return title;
 }
 
-void oplWindowSetSize(OplWindow window, uint16_t width, uint16_t height) {
-  XResizeWindow(s_x11State.display, ((_OplX11Window*)window)->window,
-                width, height);
+void opl_window_set_size(opl_window_t window, int width, int height) {
+  XResizeWindow(s_opl_state.display, window->window, width, height);
 }
 
-void oplWindowGetSize(OplWindow window, uint16_t *width, uint16_t *height) {
-  const _OplX11Window *x11Window = ((_OplX11Window*)window);
-
-  XWindowAttributes windowAttributes;
-  XGetWindowAttributes(s_x11State.display, x11Window->window, &windowAttributes);
-  *width = windowAttributes.width;
-  *height = windowAttributes.height;
+void opl_window_get_size(opl_window_t window, int *width, int *height) {
+  XWindowAttributes attrs;
+  XGetWindowAttributes(s_opl_state.display, window->window, &attrs);
+  *width  = attrs.width;
+  *height = attrs.height;
 }
 
-void oplWindowSetPosition(OplWindow window, uint16_t x, uint16_t y) {
-  XMoveWindow(s_x11State.display, ((_OplX11Window*)window)->window, x, y);
+void opl_window_set_pos(opl_window_t window, int x, int y) {
+  XMoveWindow(s_opl_state.display, window->window, x, y);
 }
 
-void oplWindowGetPosition(OplWindow window, uint16_t *x, uint16_t *y) {
-  const _OplX11Window *x11Window = ((_OplX11Window*)window);
-
-  XWindowAttributes windowAttributes;
-  XGetWindowAttributes(s_x11State.display, x11Window->window, &windowAttributes);
-  *x = windowAttributes.x;
-  *y = windowAttributes.y;
+void opl_window_get_pos(opl_window_t window, int *x, int *y) {
+  XWindowAttributes attrs;
+  XGetWindowAttributes(s_opl_state.display, window->window, &attrs);
+  *x = attrs.x;
+  *y = attrs.y;
 }
 
-void oplWindowMiniaturize(OplWindow window) {
-  XIconifyWindow(s_x11State.display, ((_OplX11Window*)window)->window, s_x11State.screenIndex);
+void opl_hide(opl_window_t window) {
+  XIconifyWindow(
+    s_opl_state.display,
+    window->window,
+    s_opl_state.screen_ind
+  );
 }
 
-uint8_t oplWindowIsMinituarized(OplWindow window) {
-  #warning "oplWindowIsMinituarized(): not implemented"
-  return OPL_FALSE;
+int opl_is_hidden(opl_window_t window) {
+  (void)(window);
+  // #warning "oplWindowIsMinituarized(): not implemented"
+  return 0;
 }
 
-void oplWindowMaximize(OplWindow window) {
-  #warning "oplWindowMaximize(): not implemented"
+void opl_show(opl_window_t window) {
+  XWithdrawWindow(
+    s_opl_state.display,
+    window->window,
+    s_opl_state.screen_ind
+  );
 }
 
-uint8_t oplWindowIsMaximized(OplWindow window) {
-  #warning "oplWindowIsMaximized(): not implemented"
-  return OPL_FALSE;
+int opl_is_shown(opl_window_t window) {
+  (void)(window);
+  // #warning "oplWindowIsMaximized(): not implemented"
+  return 0;
 }
 
-void oplWindowToggleFullscreen(OplWindow window) {
-  #warning "oplWindowToggleFullscreen(): not implemented"
+void opl_toggle_fullscreen(opl_window_t window) {
+  (void)(window);
+  // #warning "not implementing"
 }
 
-uint8_t oplWindowIsFullscreen(OplWindow window) {
-  #warning "oplWindowIsFullscreen(): not implemented"
+int opl_is_fullscreen(opl_window_t window) {
+  (void)(window);
+  // #warning "oplWindowIsFullscreen(): not implemented"
+  return 0;
 }
 
-void oplConsoleWrite(const char *message, OplColor color) {
-  // none, trace, info, warn, error, fatal
-  static const char* clrStrings[] = { "0", "1;30", "1;32", "1;33", "1;31", "0;41", };
-  printf("\033[%sm%s\033[0m", clrStrings[color], message);
+int opl_alert_ext(
+  const char *title,
+  const char *text,
+  opl_alert_style_t style,
+  int btn_count,
+  const char **btn_titles
+) {
+  (void)(title);
+  (void)(text);
+  (void)(style);
+  (void)(btn_count);
+  (void)(btn_titles);
+  return 1;
 }
 
-VkResult oplCreateSurface(
-  OplWindow window, VkInstance instance,
+const opl_mouse_state_t* opl_mouse_get_state(void) {
+  return &s_opl_state.mouse_state;
+}
+
+VkResult opl_vk_surface_create(
+  opl_window_t window,
+  VkInstance instance,
   const VkAllocationCallbacks *allocator,
-  VkSurfaceKHR *surface) {
-
+  VkSurfaceKHR *surface
+) {
   const VkXlibSurfaceCreateInfoKHR info = {
     .sType  = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,
     .pNext  = 0,
     .flags  = 0,
-    .window = ((_OplX11Window*)window)->window,
-    .dpy    = s_x11State.display,
+    .window = window->window,
+    .dpy    = s_opl_state.display,
   };
 
-  return vkCreateXlibSurfaceKHR(
-    instance, &info, allocator, surface);
+  return vkCreateXlibSurfaceKHR(instance, &info, allocator, surface);
 }
 
-void oplGetDeviceExtensions(
-  uint16_t *extensionsCount, const char* *extensionNames) {
+void opl_vk_device_extensions(
+  int *extensionsCount, const char* *extensionNames) {
   if (extensionNames) {
     extensionNames[0] = "VK_KHR_xlib_surface";
     extensionNames[1] = "VK_KHR_surface";
