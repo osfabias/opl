@@ -247,6 +247,10 @@ int opl_alert_ext(
   return 1;
 }
 
+const opl_keyboard_state_t* opl_keyboard_get_state(void) {
+  return &s_opl_state.keyboard_state;
+}
+
 const opl_mouse_state_t* opl_mouse_get_state(void) {
   return &s_opl_state.mouse_state;
 }
