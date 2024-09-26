@@ -24,11 +24,11 @@ struct opl_window {
 
 struct {
   ApplicationDelegate *app_delegate;
-  opl_mouse_state      mouse_state;
-  opl_keyboard_state   keyboard_staet;
+  opl_mouse_state_t    mouse_state;
+  opl_keyboard_state_t keyboard_staet;
 } s_opl_state;
 
-static opl_key _translate_key(uint32_t keycode) {
+static opl_key_t _translate_key(uint32_t keycode) {
   // https://boredzo.org/blog/wp-content/uploads/2007/05/IMTx-virtual-keycodes.pdf
   // https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
   switch (keycode) {
@@ -380,14 +380,14 @@ static opl_key _translate_key(uint32_t keycode) {
 }
 
 - (void)keyDown:(NSEvent *)event {
-  opl_key key = _translate_key((uint32_t)[event keyCode]);
+  opl_key_t key = _translate_key((uint32_t)[event keyCode]);
   s_opl_state.keyboard_staet.keys[key] = 1;
 
   // [self interpretKeyEvents:@[event]];
 }
 
 - (void)keyUp:(NSEvent *)event {
-  opl_key key = _translate_key((uint32_t)[event keyCode]);
+  opl_key_t key = _translate_key((uint32_t)[event keyCode]);
   s_opl_state.keyboard_staet.keys[key] = 1;
 }
 
@@ -523,12 +523,11 @@ void opl_update(void) {
 
 
 
-opl_window opl_window_open(
+struct opl_window* opl_window_open(
   int              width,
   int              height,
   const char      *title
 ) {
-
   return opl_window_open_ext(
     width,
     height,
@@ -541,13 +540,13 @@ opl_window opl_window_open(
   );
 }
 
-opl_window opl_window_open_ext(
-  int              width,
-  int              height,
-  const char      *title,
-  int              x,
-  int              y,
-  opl_window_hint  hints
+opl_window_t opl_window_open_ext(
+  int                width,
+  int                height,
+  const char        *title,
+  int                x,
+  int                y,
+  opl_window_hint_t  hints
 ) {
   struct opl_window *window = malloc(sizeof(struct opl_window));
   window->should_close = 0;
@@ -662,11 +661,11 @@ int opl_window_should_close(struct opl_window *window) {
   return window->should_close;
 }
 
-const opl_keyboard_state* opl_keyboard_get_state(void) {
+const opl_keyboard_state_t* opl_keyboard_get_state(void) {
   return &s_opl_state.keyboard_staet;
 }
 
-const opl_mouse_state* opl_mouse_get_state(void) {
+const opl_mouse_state_t* opl_mouse_get_state(void) {
   return &s_opl_state.mouse_state;
 }
 
@@ -675,11 +674,11 @@ void opl_alert(const char *title, const char *text) {
 }
 
 int opl_alert_ext(
-  const char      *title,
-  const char      *text,
-  opl_alert_style  style,
-  int              button_count,
-  const char*     *button_texts
+  const char        *title,
+  const char        *text,
+  opl_alert_style_t  style,
+  int                btn_count,
+  const char*       *btn_texts
 ) {
   NSAlert *alert = [[NSAlert alloc] init];
 
@@ -703,9 +702,9 @@ int opl_alert_ext(
   alert.informativeText = [NSString stringWithCString:text
                                              encoding:NSASCIIStringEncoding];
 
-  for (int i = 0; i < button_count; ++i) {
+  for (int i = 0; i < btn_count; ++i) {
     [alert
-        addButtonWithTitle:[NSString stringWithCString:button_texts[i]
+        addButtonWithTitle:[NSString stringWithCString:btn_texts[i]
                                               encoding:NSASCIIStringEncoding]];
   }
 
@@ -714,7 +713,7 @@ int opl_alert_ext(
 
   // When user provides custom buttons the response
   // returns a button index + 1000
-  return button_count ? response : 1;
+  return btn_count ? response : 1;
 }
 
 void opl_window_set_title(struct opl_window *window, const char *title) {
@@ -731,15 +730,19 @@ void opl_window_set_size(struct opl_window *window, int width, int height) {
       nsWindow.frame.size.height -
       [nsWindow contentRectForFrameRect:nsWindow.frame].size.height;
 
-  [nsWindow
-      setFrame:NSMakeRect(nsWindow.frame.origin.x, nsWindow.frame.origin.y,
-                          width, height + topBarHeight)
-       display:YES
-       animate:YES];
+  [nsWindow setFrame:NSMakeRect(
+                       nsWindow.frame.origin.x,
+                       nsWindow.frame.origin.y,
+                       width,
+                       height + topBarHeight
+                     )
+             display:YES
+             animate:YES];
 }
 
-void opl_window_get_size(struct opl_window *window,
-                         int *width, int *height) {
+void opl_window_get_size(
+  struct opl_window *window, int *width, int *height
+) {
   const NSWindow *nsWindow = window->window;
   const NSSize size = [nsWindow contentRectForFrameRect:nsWindow.frame].size;
 
@@ -747,24 +750,25 @@ void opl_window_get_size(struct opl_window *window,
   *height = (uint16_t)size.height;
 }
 
-void opl_window_set_pos(struct opl_window *window,
-                        int x, int y) {
+void opl_window_set_pos(struct opl_window *window, int x, int y) {
   const NSWindow *nsWindow = window->window;
 
-  [nsWindow
-      setFrame:NSMakeRect(x,
-                          NSScreen.mainScreen.frame.size.height -
-                              nsWindow.frame.size.height - y,
-                          nsWindow.frame.size.width, nsWindow.frame.size.height)
-       display:YES
-       animate:YES];
+  [nsWindow setFrame:NSMakeRect(
+                       x,
+                       NSScreen.mainScreen.frame.size.height - nsWindow.frame.size.height - y,
+                       nsWindow.frame.size.width,
+                       nsWindow.frame.size.height
+                     )
+             display:YES
+             animate:YES];
 }
 
 void opl_window_get_pos(struct opl_window *window, int *x, int *y) {
   // Need to invert Y on macOS, since origin is bottom-left.
   const NSWindow *nsWindow = window->window;
   *x = nsWindow.frame.origin.x;
-  *y = NSScreen.mainScreen.frame.size.height - nsWindow.frame.size.height -
+  *y = NSScreen.mainScreen.frame.size.height -
+       nsWindow.frame.size.height -
        nsWindow.frame.origin.y;
 }
 
@@ -818,3 +822,4 @@ void opl_vk_device_extensions(int *count, const char **names) {
   names[0] = "VK_EXT_metal_surface";
   names[1] = "VK_KHR_surface";
 }
+
