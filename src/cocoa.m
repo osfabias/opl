@@ -521,6 +521,19 @@ void opl_update(void) {
   } // autoreleasepool
 }
 
+opl_window_t opl_window_open(int width, int height, const char *title) {
+  return opl_window_open_ext(
+    width,
+    height,
+    title,
+    (NSScreen.mainScreen.frame.size.width - width) / 2,
+    (NSScreen.mainScreen.frame.size.height - height) / 2,
+    OPL_WINDOW_HINT_TITLED_BIT         |
+    OPL_WINDOW_HINT_CLOSABLE_BIT       |
+    OPL_WINDOW_HINT_MINIATURIZABLE_BIT
+  );
+}
+
 opl_window_t opl_window_open_ext(
   int                width,
   int                height,
