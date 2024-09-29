@@ -86,23 +86,26 @@ static int _get_window_state(struct opl_window* window)
 }
 
 
-static void sendEventToWM(struct opl_window* window, Atom type,
-                          long a, long b, long c, long d, long e)
-{
-    XEvent event = { ClientMessage };
-    event.xclient.window = window->window;
-    event.xclient.format = 32; // Data is 32-bit longs
-    event.xclient.message_type = type;
-    event.xclient.data.l[0] = a;
-    event.xclient.data.l[1] = b;
-    event.xclient.data.l[2] = c;
-    event.xclient.data.l[3] = d;
-    event.xclient.data.l[4] = e;
+static void _send_event_to_wm(
+  struct opl_window* window, Atom type,
+  long a, long b, long c, long d, long e
+) {
+  XEvent event = { ClientMessage };
+  event.xclient.window = window->window;
+  event.xclient.format = 32; // Data is 32-bit longs
+  event.xclient.message_type = type;
+  event.xclient.data.l[0] = a;
+  event.xclient.data.l[1] = b;
+  event.xclient.data.l[2] = c;
+  event.xclient.data.l[3] = d;
+  event.xclient.data.l[4] = e;
 
-    XSendEvent(s_opl_state.display, s_opl_state.root_window,
-               False,
-               SubstructureNotifyMask | SubstructureRedirectMask,
-               &event);
+  XSendEvent(
+    s_opl_state.display, s_opl_state.root_window,
+    False,
+    SubstructureNotifyMask | SubstructureRedirectMask,
+    &event
+  );
 }
 
 
@@ -122,7 +125,17 @@ int opl_init(void) {
     s_opl_state.screen_ind
   );
 
-  s_opl_state.wm_state = XInternAtom(s_opl_state.display, "WM_STATE", True);
+  s_opl_state.wm_state = XInternAtom(
+    s_opl_state.display, "WM_STATE", True
+  );
+
+  s_opl_state.new_wm_state = XInternAtom (
+    s_opl_state.display, "_NET_WM_STATE", True
+  );
+
+  s_opl_state.wm_fullscreen = XInternAtom (
+    s_opl_state.display, "_NET_WM_STATE_FULLSCREEN", True
+  );
 
   return 1;
 }
@@ -306,23 +319,19 @@ int opl_is_shown(struct opl_window *window) {
   return state == NormalState || state == WithdrawnState;
 }
 
-void opl_set_fullscreen(struct opl_window *window, int state) {
+void opl_toggle_fullscreen(struct opl_window *window) {
   //(void)(state);
-  Atom wm_state   = XInternAtom (s_opl_state.display, "_NET_WM_STATE", 1 );
-  Atom wm_fullscreen = XInternAtom (s_opl_state.display, "_NET_WM_STATE_FULLSCREEN", 1 );
-  
-
-  sendEventToWM(window,
-                          wm_state,
-                          state ? _NET_WM_STATE_ADD: _NET_WM_STATE_REMOVE,
-                          wm_fullscreen,
-                          0, 1, 0);
-
+  _send_event_to_wm(
+    window,
+    s_opl_state.net_wm_state,
+    _NET_WM_STATE_TOGGLE,
+    s_opl_state.wm_fullscreen,
+    0, 1, 0
+  );
 }
 
 int opl_is_fullscreen(struct opl_window *window) {
   (void)(window);
-
   return 0;
 }
 

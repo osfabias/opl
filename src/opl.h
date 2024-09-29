@@ -430,7 +430,7 @@ int opl_is_shown(opl_window_t window);
  *
  * @param window An opl window handle.
  */
-void opl_set_fullscreen(opl_window_t window, int state);
+void opl_toggle_fullscreen(opl_window_t window);
 
 /**
  * @brief Returns whether a window in fullscreen mode or not.
