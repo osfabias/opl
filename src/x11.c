@@ -1,12 +1,20 @@
 #include <stdlib.h>
+#include <limits.h>
 
+#include <X11/Xmd.h>
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/Xatom.h>
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_xlib.h>
 
 #define OPL_INCLUDE_VULKAN
 #include "opl.h"
+
+
+#define _NET_WM_STATE_REMOVE        0	/* remove/unset property */
+#define _NET_WM_STATE_ADD           1	/* add/set property */
 
 struct opl_window {
   Window  window;
@@ -19,9 +27,84 @@ static struct {
   Screen  *screen;
   Window   root_window;
 
+  Atom     wm_state;
+  Atom     net_wm_state;
+  Atom     wm_state_fullscreen;
+
   opl_mouse_state_t    mouse_state;
   opl_keyboard_state_t keyboard_state;
 } s_opl_state;
+
+
+static unsigned long _get_window_prop(Window window,
+                                        Atom property,
+                                        Atom type,
+                                        unsigned char** value)
+{
+    Atom actualType;
+    int actualFormat;
+    unsigned long itemCount, bytesAfter;
+
+    XGetWindowProperty(s_opl_state.display,
+                       window,
+                       property,
+                       0,
+                       LONG_MAX,
+                       False,
+                       type,
+                       &actualType,
+                       &actualFormat,
+                       &itemCount,
+                       &bytesAfter,
+                       value);
+
+    return itemCount;
+}
+
+
+
+static int _get_window_state(struct opl_window* window)
+{
+    int result = WithdrawnState;
+    struct {
+        CARD32 state;
+        Window icon;
+    } *state = NULL;
+
+    if (_get_window_prop(window->window,
+                                  s_opl_state.wm_state,
+                                  s_opl_state.wm_state,
+                                  (unsigned char**) &state))
+    {
+        result = state->state;
+    }
+
+    if (state)
+        XFree(state);
+
+    return result;
+}
+
+
+static void sendEventToWM(struct opl_window* window, Atom type,
+                          long a, long b, long c, long d, long e)
+{
+    XEvent event = { ClientMessage };
+    event.xclient.window = window->window;
+    event.xclient.format = 32; // Data is 32-bit longs
+    event.xclient.message_type = type;
+    event.xclient.data.l[0] = a;
+    event.xclient.data.l[1] = b;
+    event.xclient.data.l[2] = c;
+    event.xclient.data.l[3] = d;
+    event.xclient.data.l[4] = e;
+
+    XSendEvent(s_opl_state.display, s_opl_state.root_window,
+               False,
+               SubstructureNotifyMask | SubstructureRedirectMask,
+               &event);
+}
+
 
 int opl_init(void) {
   s_opl_state.display = XOpenDisplay(0);
@@ -39,6 +122,8 @@ int opl_init(void) {
     s_opl_state.screen_ind
   );
 
+  s_opl_state.wm_state = XInternAtom(s_opl_state.display, "WM_STATE", True);
+
   return 1;
 }
 
@@ -49,7 +134,8 @@ void opl_quit(void) {
 void opl_update(void) {
   XEvent event;
 
-  while (!XNextEvent(s_opl_state.display, &event)) {
+  while (XPending(s_opl_state.display)) {
+    XNextEvent(s_opl_state.display, &event);
     switch (event.type) {
       case KeyPress:
         s_opl_state.keyboard_state.keys[event.xkey.keycode] = 1;
@@ -71,9 +157,11 @@ void opl_update(void) {
         break;
     }
   }
+
+  
 }
 
-opl_window_t opl_window_open(int width, int height, const char *title) {
+struct opl_window *opl_window_open(int width, int height, const char *title) {
   return opl_window_open_ext(
     width,
     height,
@@ -84,7 +172,7 @@ opl_window_t opl_window_open(int width, int height, const char *title) {
   );
 }
 
-opl_window_t opl_window_open_ext(
+struct opl_window *opl_window_open_ext(
   int width,
   int height,
   const char *title,
@@ -151,49 +239,49 @@ opl_window_t opl_window_open_ext(
   return window;
 }
 
-void opl_window_close(opl_window_t window) {
+void opl_window_close(struct opl_window *window) {
   XUnmapWindow(s_opl_state.display, window->window);
   XDestroyWindow(s_opl_state.display, window->window);
   free(window);
 }
 
-int opl_window_should_close(opl_window_t window) {
+int opl_window_should_close(struct opl_window *window) {
   return window->should_close;
 }
 
-void opl_window_set_title(opl_window_t window, const char *title) {
+void opl_window_set_title(struct opl_window *window, const char *title) {
   XStoreName(s_opl_state.display, window->window, title);
 }
 
-const char* opl_window_get_title(opl_window_t window) {
+const char* opl_window_get_title(struct opl_window *window) {
   char *title;
   XFetchName(s_opl_state.display, window->window, &title);
   return title;
 }
 
-void opl_window_set_size(opl_window_t window, int width, int height) {
+void opl_window_set_size(struct opl_window *window, int width, int height) {
   XResizeWindow(s_opl_state.display, window->window, width, height);
 }
 
-void opl_window_get_size(opl_window_t window, int *width, int *height) {
+void opl_window_get_size(struct opl_window *window, int *width, int *height) {
   XWindowAttributes attrs;
   XGetWindowAttributes(s_opl_state.display, window->window, &attrs);
   *width  = attrs.width;
   *height = attrs.height;
 }
 
-void opl_window_set_pos(opl_window_t window, int x, int y) {
+void opl_window_set_pos(struct opl_window *window, int x, int y) {
   XMoveWindow(s_opl_state.display, window->window, x, y);
 }
 
-void opl_window_get_pos(opl_window_t window, int *x, int *y) {
+void opl_window_get_pos(struct opl_window *window, int *x, int *y) {
   XWindowAttributes attrs;
   XGetWindowAttributes(s_opl_state.display, window->window, &attrs);
   *x = attrs.x;
   *y = attrs.y;
 }
 
-void opl_hide(opl_window_t window) {
+void opl_hide(struct opl_window *window) {
   XIconifyWindow(
     s_opl_state.display,
     window->window,
@@ -201,13 +289,11 @@ void opl_hide(opl_window_t window) {
   );
 }
 
-int opl_is_hidden(opl_window_t window) {
-  (void)(window);
-  // #warning "oplWindowIsMinituarized(): not implemented"
-  return 0;
+int opl_is_hidden(struct opl_window *window) {
+  return _get_window_state(window ) == IconicState;
 }
 
-void opl_show(opl_window_t window) {
+void opl_show(struct opl_window *window) {
   XWithdrawWindow(
     s_opl_state.display,
     window->window,
@@ -215,20 +301,28 @@ void opl_show(opl_window_t window) {
   );
 }
 
-int opl_is_shown(opl_window_t window) {
-  (void)(window);
-  // #warning "oplWindowIsMaximized(): not implemented"
-  return 0;
+int opl_is_shown(struct opl_window *window) {
+  int state =  _get_window_state(window );
+  return state == NormalState || state == WithdrawnState;
 }
 
-void opl_toggle_fullscreen(opl_window_t window) {
-  (void)(window);
-  // #warning "not implementing"
+void opl_set_fullscreen(struct opl_window *window, int state) {
+  //(void)(state);
+  Atom wm_state   = XInternAtom (s_opl_state.display, "_NET_WM_STATE", 1 );
+  Atom wm_fullscreen = XInternAtom (s_opl_state.display, "_NET_WM_STATE_FULLSCREEN", 1 );
+  
+
+  sendEventToWM(window,
+                          wm_state,
+                          state ? _NET_WM_STATE_ADD: _NET_WM_STATE_REMOVE,
+                          wm_fullscreen,
+                          0, 1, 0);
+
 }
 
-int opl_is_fullscreen(opl_window_t window) {
+int opl_is_fullscreen(struct opl_window *window) {
   (void)(window);
-  // #warning "oplWindowIsFullscreen(): not implemented"
+
   return 0;
 }
 
@@ -256,7 +350,7 @@ const opl_mouse_state_t* opl_mouse_get_state(void) {
 }
 
 VkResult opl_vk_surface_create(
-  opl_window_t window,
+  struct opl_window *window,
   VkInstance instance,
   const VkAllocationCallbacks *allocator,
   VkSurfaceKHR *surface
@@ -281,3 +375,6 @@ void opl_vk_device_extensions(
 
   *extensionsCount = 2;
 }
+
+
+
