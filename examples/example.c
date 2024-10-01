@@ -14,13 +14,6 @@ int main() {
   
   while (!opl_window_should_close(window)) {
     opl_update();
-    printf("%d \n", opl_is_fullscreen(window));
-    opl_set_fullscreen(window,1);
-    opl_update();
-    usleep(1000*1000*3);
-    opl_set_fullscreen(window, 0);
-    opl_update();
-    usleep(1000*1000*3);
   }
   
   opl_window_close(window);
