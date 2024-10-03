@@ -276,3 +276,4 @@ void oplGetDeviceExtensions(
 
   *extensionsCount = 2;
 }
+

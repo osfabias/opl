@@ -361,8 +361,7 @@ static const NSRange kEmptyRange = {NSNotFound, 0};
 
 @end // ApplicationDelegate
 
-int opl_init(void)
-{
+int opl_init(void) {
   // I don't know what this line stands for (o_O)
   [NSApplication sharedApplication];
 
@@ -390,14 +389,12 @@ int opl_init(void)
   return true;
 }
 
-void opl_quit(void)
-{
+void opl_quit(void) {
   [NSApp setDelegate:nil];
   [s_opl_state.app_delegate release];
 }
 
-void opl_update(void)
-{
+void opl_update(void) {
   @autoreleasepool {
     NSEvent *event;
 
@@ -415,8 +412,7 @@ void opl_update(void)
   } // autoreleasepool
 }
 
-opl_window_t opl_window_open(int width, int height, const char *title)
-{
+opl_window_t opl_window_open(int width, int height, const char *title) {
   return opl_window_open_ext(
     width,
     height,
@@ -429,9 +425,14 @@ opl_window_t opl_window_open(int width, int height, const char *title)
   );
 }
 
-opl_window_t opl_window_open_ext(int width, int height,
-                                 const char *title, int x, int y,opl_window_hint_t hints)
-{
+opl_window_t opl_window_open_ext(
+  int                width,
+  int                height,
+  const char        *title,
+  int                x,
+  int                y,
+  opl_window_hint_t  hints
+) {
   struct opl_window *window = malloc(sizeof(struct opl_window));
   window->should_close = 0;
 
@@ -529,8 +530,7 @@ opl_window_t opl_window_open_ext(int width, int height,
   return window;
 }
 
-void opl_window_close(struct opl_window *window)
-{
+void opl_window_close(struct opl_window *window) {
   [window->window orderOut:nil];
 
   [window->window setDelegate:nil];
@@ -542,25 +542,25 @@ void opl_window_close(struct opl_window *window)
   free(window);
 }
 
-int opl_window_should_close(struct opl_window *window)
-{
+int opl_window_should_close(struct opl_window *window) {
   return window->should_close;
 }
 
-const opl_keyboard_state_t* opl_keyboard_get_state(void)
-{
+const opl_keyboard_state_t* opl_keyboard_get_state(void) {
   return &s_opl_state.keyboard_staet;
 }
 
-const opl_mouse_state_t* opl_mouse_get_state(void)
-{
+const opl_mouse_state_t* opl_mouse_get_state(void) {
   return &s_opl_state.mouse_state;
 }
 
-int opl_alert_ext(const char *title, const char *text, 
-                  opl_alert_style_t style, int btn_count,
-                  const char* *btn_texts)
-{
+int opl_alert_ext(
+  const char        *title,
+  const char        *text,
+  opl_alert_style_t  style,
+  int                btn_count,
+  const char*       *btn_texts
+) {
   NSAlert *alert = [[NSAlert alloc] init];
 
   switch (style) {
@@ -597,19 +597,15 @@ int opl_alert_ext(const char *title, const char *text,
   return btn_count ? response : 1;
 }
 
-void opl_window_set_title(struct opl_window *window, const char *title)
-{
+void opl_window_set_title(struct opl_window *window, const char *title) {
   [window->window setTitle:@(title)];
 }
 
-const char* opl_window_get_title(struct opl_window *window)
-{
+const char* opl_window_get_title(struct opl_window *window) {
   return [window->window.title cStringUsingEncoding:NSASCIIStringEncoding];
 }
 
-void opl_window_set_size(struct opl_window *window,
-                         int width, int height)
-{
+void opl_window_set_size(struct opl_window *window, int width, int height) {
   const NSWindow *nsWindow = window->window;
   const uint16_t topBarHeight =
       nsWindow.frame.size.height -
@@ -625,9 +621,9 @@ void opl_window_set_size(struct opl_window *window,
              animate:YES];
 }
 
-void opl_window_get_size(struct opl_window *window,
-                         int *width, int *height)
-{
+void opl_window_get_size(
+  struct opl_window *window, int *width, int *height
+) {
   const NSWindow *nsWindow = window->window;
   const NSSize size = [nsWindow contentRectForFrameRect:nsWindow.frame].size;
 
@@ -635,8 +631,7 @@ void opl_window_get_size(struct opl_window *window,
   *height = (uint16_t)size.height;
 }
 
-void opl_window_set_pos(struct opl_window *window, int x, int y)
-{
+void opl_window_set_pos(struct opl_window *window, int x, int y) {
   const NSWindow *nsWindow = window->window;
 
   [nsWindow setFrame:NSMakeRect(
@@ -649,8 +644,7 @@ void opl_window_set_pos(struct opl_window *window, int x, int y)
              animate:YES];
 }
 
-void opl_window_get_pos(struct opl_window *window, int *x, int *y)
-{
+void opl_window_get_pos(struct opl_window *window, int *x, int *y) {
   // Need to invert Y on macOS, since origin is bottom-left.
   const NSWindow *nsWindow = window->window;
   *x = nsWindow.frame.origin.x;
@@ -659,39 +653,35 @@ void opl_window_get_pos(struct opl_window *window, int *x, int *y)
        nsWindow.frame.origin.y;
 }
 
-void opl_hide(struct opl_window *window)
-{
+void opl_hide(struct opl_window *window) {
   [window->window setIsMiniaturized:YES];
 }
 
-int opl_is_hidden(struct opl_window *window)
-{
+int opl_is_hidden(struct opl_window *window) {
   return window->window.isMiniaturized;
 }
 
-void opl_show(struct opl_window *window)
-{
+void opl_show(struct opl_window *window) {
   [window->window setIsMiniaturized:NO];
 }
 
-int opl_is_shown(struct opl_window *window)
-{
+int opl_is_shown(struct opl_window *window) {
   return !window->window.isMiniaturized;
 }
 
-void opl_toggle_fullscreen(struct opl_window *window)
-{
+void opl_toggle_fullscreen(struct opl_window *window) {
   [window->window toggleFullScreen:nil];
 }
 
-int opl_is_fullscreen(struct opl_window *window)
-{
+int opl_is_fullscreen(struct opl_window *window) {
   return window->window.styleMask & NSWindowStyleMaskFullScreen;
 }
 
 VkResult opl_vk_surface_create(
-  struct opl_window *window, VkInstance instance,
-  const VkAllocationCallbacks *allocator, VkSurfaceKHR *surface)
+  struct opl_window *window,
+  VkInstance instance,
+  const VkAllocationCallbacks *allocator,
+  VkSurfaceKHR *surface)
 {
   const VkMetalSurfaceCreateInfoEXT info = {
       .sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT,
