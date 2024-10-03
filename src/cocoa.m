@@ -278,7 +278,7 @@ static opl_key_t _translate_key(uint32_t keycode) {
 
 - (void)keyUp:(NSEvent *)event {
   opl_key_t key = _translate_key((uint32_t)[event keyCode]);
-  s_opl_state.input_state.keys[key] = 1;
+  s_opl_state.input_state.keys[key] = 0;
 }
 
 - (void)scrollWheel:(NSEvent *)event {
