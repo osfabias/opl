@@ -212,54 +212,46 @@ typedef enum opl_key {
 } opl_key_t;
 
 /**
- * @brief Keyboard state.
- *
- * @var opl_keyboard_state::keys
- * An array of integers that represents key states. 1 represents 
- * that the key is down and 0 represents that the key is up. The 
- * index of each element corresponds to it's key code defined in
- * opl_key_t enum. The value of elements which indices not presented in 
- * the opl_key_t enum is undefined.
- */
-typedef struct opl_keyboard_state {
-  char keys[OPL_KEY_MAX_ENUM];
-} opl_keyboard_state_t;
-
-/**
  * @brief Mouse button codes.
  */
-typedef enum opl_mouse_btn {
-  OPL_MOUSE_BTN_LEFT,
-  OPL_MOUSE_BTN_RIGHT,
-  OPL_MOUSE_BTN_MIDDLE,
+typedef enum opl_btn {
+  OPL_BTN_LEFT,
+  OPL_BTN_RIGHT,
+  OPL_BTN_MIDDLE,
 
-  OPL_MOUSE_BTN_MAX_ENUM
-} opl_mouse_btn_t;
+  OPL_BTN_MAX_ENUM
+} opl_btn_t;
 
 /**
- * @brief Mouse state.
- * @var opl_mouse_state::btns
- * An array of mouse button states. 0 represents that the mouse button
- * is up, 1 represents that the mouse button is down. The index of each
- * element (mouse button) corresponds to it's code (use opl_mouse_btn_t
- * enum for mouse button codes). The value of elements which indices 
- * not presented in the opl_key_t enum is undefined.
+ * @brief Input state.
  *
- * @var opl_mouse_state::x
+ * @var opl_input_state:keys
+ * An array of keyboard keys states. 0 represents that the key
+ * is up, 1 represents that the key is down. The index of each
+ * element corresponds to it's code (use opl_key_t enum for key codes).
+ *
+ * @var opl_input_state::btns
+ * An array of mouse button states. 0 represents that the button
+ * is up, 1 represents that the button is down. The index of each
+ * element (mouse button) corresponds to it's code (use opl_btn_t
+ * enum for mouse button codes).
+ *
+ * @var opl_input_state::x
  * X position of the cursor on the screen.
  *
- * @var opl_mouse_state::y
+ * @var opl_input_state::y
  * Y position of the cursor on the screen.
  *
- * @var opl_mouse_state::wheel
+ * @var opl_input_state::wheel
  * A mouse wheel scroll.
  */
-typedef struct opl_mouse_state {
-  char btns[OPL_MOUSE_BTN_MAX_ENUM];
+typedef struct opl_input_state {
+  char keys[OPL_KEY_MAX_ENUM];
+  char btns[OPL_BTN_MAX_ENUM];
   int  x;
   int  y;
   int  wheel;
-} opl_mouse_state_t;
+} opl_input_state_t;
 
 /**
  * @brief Initializes opl.
@@ -476,22 +468,11 @@ int opl_alert_ext(
   opl_alert_ext(title, text, OPL_ALERT_STYLE_ERROR, 0, 0);
 
 /**
- * @brief Returns a pointer to the keyboard state.
+ * @brief Returns a pointer to an input state.
  *
- * @param state A pointer variable that will hold a pointer to
- *              the keyboard state. If the passed pointer is a
- *              null pointer the behaviour is undefined.
- *
- * @return Returns a pointer to the platform keyboard state.
+ * @returns A pointer to the platform input state.
  */
-const opl_keyboard_state_t* opl_keyboard_get_state(void);
-
-/**
- * @brief Returns a pointer to a mouse state.
- *
- * @returns A pointer to the platform mouse state.
- */
-const opl_mouse_state_t* opl_mouse_get_state(void);
+const opl_input_state_t* opl_get_input_state(void);
 
 #ifdef OPL_INCLUDE_VULKAN
 #include <vulkan/vulkan.h>

@@ -24,8 +24,7 @@ struct opl_window {
 
 struct {
   ApplicationDelegate *app_delegate;
-  opl_mouse_state_t    mouse_state;
-  opl_keyboard_state_t keyboard_staet;
+  opl_input_state_t    input_state;
 } s_opl_state;
 
 static opl_key_t _translate_key(uint32_t keycode) {
@@ -216,7 +215,7 @@ static opl_key_t _translate_key(uint32_t keycode) {
 }
 
 - (void)mouseDown:(NSEvent *)event {
-  s_opl_state.mouse_state.btns[OPL_MOUSE_BTN_LEFT] = 1;
+  s_opl_state.input_state.btns[OPL_BTN_LEFT] = 1;
 }
 
 - (void)mouseDragged:(NSEvent *)event {
@@ -225,7 +224,7 @@ static opl_key_t _translate_key(uint32_t keycode) {
 }
 
 - (void)mouseUp:(NSEvent *)event {
-  s_opl_state.mouse_state.btns[OPL_MOUSE_BTN_LEFT] = 0;
+  s_opl_state.input_state.btns[OPL_BTN_LEFT] = 0;
 }
 
 - (void)mouseMoved:(NSEvent *)event {
@@ -235,15 +234,15 @@ static opl_key_t _translate_key(uint32_t keycode) {
   // Also need to scale the mouse position by the device pixel
   // ratio so screen lookups are correct.
   NSSize window_size = window->metal_layer.drawableSize;
-  s_opl_state.mouse_state.x =
+  s_opl_state.input_state.x =
     pos.x * window->metal_layer.contentsScale;
 
-  s_opl_state.mouse_state.y =
+  s_opl_state.input_state.y =
     window_size.height - (pos.y * window->metal_layer.contentsScale);
 }
 
 - (void)rightMouseDown:(NSEvent *)event {
-  s_opl_state.mouse_state.btns[OPL_MOUSE_BTN_RIGHT] = 1;
+  s_opl_state.input_state.btns[OPL_BTN_RIGHT] = 1;
 }
 
 - (void)rightMouseDragged:(NSEvent *)event {
@@ -252,12 +251,12 @@ static opl_key_t _translate_key(uint32_t keycode) {
 }
 
 - (void)rightMouseUp:(NSEvent *)event {
-  s_opl_state.mouse_state.btns[OPL_MOUSE_BTN_RIGHT] = 0;
+  s_opl_state.input_state.btns[OPL_BTN_RIGHT] = 0;
 }
 
 - (void)otherMouseDown:(NSEvent *)event {
   // Interpreted as middle click
-  s_opl_state.mouse_state.btns[OPL_MOUSE_BTN_MIDDLE] = 1;
+  s_opl_state.input_state.btns[OPL_BTN_MIDDLE] = 1;
 }
 
 - (void)otherMouseDragged:(NSEvent *)event {
@@ -267,23 +266,23 @@ static opl_key_t _translate_key(uint32_t keycode) {
 
 - (void)otherMouseUp:(NSEvent *)event {
   // Interpreted as middle click
-  s_opl_state.mouse_state.btns[OPL_MOUSE_BTN_MIDDLE] = 0;
+  s_opl_state.input_state.btns[OPL_BTN_MIDDLE] = 0;
 }
 
 - (void)keyDown:(NSEvent *)event {
   opl_key_t key = _translate_key((uint32_t)[event keyCode]);
-  s_opl_state.keyboard_staet.keys[key] = 1;
+  s_opl_state.input_state.keys[key] = 1;
 
   // [self interpretKeyEvents:@[event]];
 }
 
 - (void)keyUp:(NSEvent *)event {
   opl_key_t key = _translate_key((uint32_t)[event keyCode]);
-  s_opl_state.keyboard_staet.keys[key] = 1;
+  s_opl_state.input_state.keys[key] = 1;
 }
 
 - (void)scrollWheel:(NSEvent *)event {
-  s_opl_state.mouse_state.wheel = ((int8_t)[event scrollingDeltaY]);
+  s_opl_state.input_state.wheel = ((int8_t)[event scrollingDeltaY]);
 }
 
 // If these methods not implemented - compiler generates warnings and
@@ -547,14 +546,8 @@ int opl_window_should_close(struct opl_window *window)
   return window->should_close;
 }
 
-const opl_keyboard_state_t* opl_keyboard_get_state(void)
-{
-  return &s_opl_state.keyboard_staet;
-}
-
-const opl_mouse_state_t* opl_mouse_get_state(void)
-{
-  return &s_opl_state.mouse_state;
+const opl_input_state_t* opl_get_input_state(void) {
+  return &s_opl_state.input_state;
 }
 
 int opl_alert_ext(const char *title, const char *text, 

@@ -31,8 +31,7 @@ static struct {
   Atom     net_wm_state;
   Atom     wm_state_fullscreen;
 
-  opl_mouse_state_t    mouse_state;
-  opl_keyboard_state_t keyboard_state;
+  opl_input_state_t input_state;
 } s_opl_state;
 
 
@@ -151,20 +150,20 @@ void opl_update(void) {
     XNextEvent(s_opl_state.display, &event);
     switch (event.type) {
       case KeyPress:
-        s_opl_state.keyboard_state.keys[event.xkey.keycode] = 1;
+        s_opl_state.input_state.keys[event.xkey.keycode] = 1;
         break;
       case KeyRelease:
-        s_opl_state.keyboard_state.keys[event.xkey.keycode] = 0;
+        s_opl_state.input_state.keys[event.xkey.keycode] = 0;
         break;
       case ButtonPress:
-        s_opl_state.mouse_state.btns[event.xbutton.button] = 1;
+        s_opl_state.input_state.btns[event.xbutton.button] = 1;
         break;
       case ButtonRelease:
-        s_opl_state.mouse_state.btns[event.xbutton.button] = 0;
+        s_opl_state.input_state.btns[event.xbutton.button] = 0;
         break;
       case MotionNotify:
-        s_opl_state.mouse_state.x = event.xbutton.x;
-        s_opl_state.mouse_state.y = event.xbutton.y;
+        s_opl_state.input_state.x = event.xbutton.x;
+        s_opl_state.input_state.y = event.xbutton.y;
         break;
       case Expose:
         break;
@@ -350,12 +349,8 @@ int opl_alert_ext(
   return 1;
 }
 
-const opl_keyboard_state_t* opl_keyboard_get_state(void) {
-  return &s_opl_state.keyboard_state;
-}
-
-const opl_mouse_state_t* opl_mouse_get_state(void) {
-  return &s_opl_state.mouse_state;
+const opl_input_state_t* opl_get_input_state(void) {
+  return &s_opl_state.input_state;
 }
 
 VkResult opl_vk_surface_create(
