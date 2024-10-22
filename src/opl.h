@@ -461,6 +461,19 @@ int opl_is_fullscreen(opl_window window);
 /**
  * @brief Shows an alert window.
  *
+ * Function will wait for the user to close an alert window.
+ *
+ * @param title Title of the alert window.
+ * @param text  Text of the the alert window.
+ */
+int opl_alert(
+  const char *title,
+  const char *text
+);
+
+/**
+ * @brief Shows an alert window.
+ *
  * This function will wait for the user to click any button or
  * close an alert window.
  *
@@ -479,19 +492,6 @@ int opl_alert_ext(
   opl_alert_style  style,
   int              btn_count,
   const char*     *btn_titles
-);
-
-/**
- * @brief Shows an alert window.
- *
- * Function will wait for the user to close an alert window.
- *
- * @param title Title of the alert window.
- * @param text  Text of the the alert window.
- */
-int opl_alert(
-  const char *title,
-  const char *text
 );
 
 /**

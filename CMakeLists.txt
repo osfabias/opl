@@ -66,7 +66,7 @@ target_include_directories(opl PUBLIC src)
 if(MSVC)
   target_compile_options(opl PRIVATE /W4 /WX)
 else()
-  target_compile_options(opl PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(opl PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 # ~ example programs

@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include <windows.h>
 #include <windowsx.h>
 
@@ -15,97 +17,106 @@ struct opl_window {
 };
 
 static struct {
-  HMODULE hInstance;
-  WNDCLASSA windowClass;
+  int             initialized;
+  HMODULE         h_instance;
+  WNDCLASSA       window_class;
+  opl_input_state input_state;
+} s_opl_state;
 
-  OplMouseState mouseState;
-  OplKeyboardState keyboardState;
-} s_win32State = { .initialized = OPL_FALSE };
-
-LRESULT CALLBACK windowProcessMessage(
-  HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-  switch (uMsg) {
+LRESULT CALLBACK window_process_msg(
+  HWND   hwnd,
+  UINT   umsg,
+  WPARAM wparam,
+  LPARAM lparam
+) {
+  switch (umsg) {
     case WM_ERASEBKGND:
       // Notify the OS that erasing will be handled by the application
       return 1;
     case WM_CLOSE:
-      opl_window *window = GetProp(hWnd, WINDOW_PROPERTY_NAME_OPL_WINDOW);
-      window->should_close = OPL_TRUE;
+      struct opl_window *window = GetProp(
+        hwnd, WINDOW_PROPERTY_NAME_OPL_WINDOW);
+      window->should_close = 1;
       break;
     case WM_SIZE:
       break;
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
-      s_win32State.keyboardState.keys[wParam] = 1;
+      s_opl_state.input_state.keys[wparam] = 1;
       break;
     case WM_KEYUP:
     case WM_SYSKEYUP:
-      s_win32State.keyboardState.keys[wParam] = 0;
+      s_opl_state.input_state.keys[wparam] = 0;
       break;
     case WM_MOUSEMOVE:
-      s_win32State.mouseState.x = GET_X_LPARAM(lParam);
-      s_win32State.mouseState.y = GET_Y_LPARAM(lParam);
+      s_opl_state.input_state.x = GET_X_LPARAM(lparam);
+      s_opl_state.input_state.y = GET_Y_LPARAM(lparam);
       break;
     case WM_MOUSEWHEEL:
-      int32_t wheel = GET_WHEEL_DELTA_WPARAM(wParam);
-      s_win32State.mouseState.wheel = wheel > 0 ? 1 : -1;
+      s_opl_state.input_state.wheel = GET_WHEEL_DELTA_WPARAM(wparam);
       break;
     case WM_LBUTTONDOWN:
-      s_win32State.mouseState.buttons[OPL_MOUSE_BUTTON_LEFT] = 1;
+      s_opl_state.input_state.btns[OPL_BTN_LEFT] = 1;
       break;
     case WM_LBUTTONUP:
-      s_win32State.mouseState.buttons[OPL_MOUSE_BUTTON_LEFT] = 0;
+      s_opl_state.input_state.btns[OPL_BTN_LEFT] = 0;
       break;
     case WM_RBUTTONDOWN:
-      s_win32State.mouseState.buttons[OPL_MOUSE_BUTTON_RIGHT] = 1;
+      s_opl_state.input_state.btns[OPL_BTN_RIGHT] = 1;
       break;
     case WM_RBUTTONUP:
-      s_win32State.mouseState.buttons[OPL_MOUSE_BUTTON_RIGHT] = 0;
+      s_opl_state.input_state.btns[OPL_BTN_RIGHT] = 0;
       break;
     case WM_MBUTTONDOWN:
-      s_win32State.mouseState.buttons[OPL_MOUSE_BUTTON_MIDDLE] = 1;
+      s_opl_state.input_state.btns[OPL_BTN_MIDDLE] = 1;
       break;
     case WM_MBUTTONUP:
-      s_win32State.mouseState.buttons[OPL_MOUSE_BUTTON_MIDDLE] = 0;
+      s_opl_state.input_state.btns[OPL_BTN_MIDDLE] = 0;
       break;
     default:
-      return DefWindowProc(hWnd, uMsg, wParam, lParam);
+      return DefWindowProc(hwnd, umsg, wparam, lparam);
   }
 
   return 0;
 }
 
-uint8_t oplInit() {
-  if (s_win32State.initialized) { return OPL_TRUE; }
+int opl_init(void)
+{
+  if (s_opl_state.initialized) { return 1; }
 
   // Saving a handle to currenty running application
-  s_win32State.hInstance = GetModuleHandle(0);
+  s_opl_state.h_instance = GetModuleHandle(0);
 
   // Register window class
-  WNDCLASSA windowClass = {
-    .style         = CS_DBLCLKS, // Get double clicks (i dunno what that means...)
-    .lpfnWndProc   = windowProcessMessage,
+  WNDCLASSA window_class = {
+    .style         = CS_DBLCLKS, // Get double clicks
+    .lpfnWndProc   = window_process_msg,
     .cbClsExtra    = 0,
     .cbWndExtra    = 0,
-    .hInstance     = s_win32State.hInstance,
-    .hIcon         = LoadIconA(s_win32State.hInstance, IDI_APPLICATION),
+    .hInstance     = s_opl_state.h_instance,
+    .hIcon         = LoadIconA(s_opl_state.h_instance, IDI_APPLICATION),
     .hCursor       = LoadCursorA(0, IDC_ARROW),
     .hbrBackground = 0,
     .lpszClassName = WINDOW_CLASS_NAME,
     .lpszMenuName  = "",
   };
-  if(!RegisterClass(&windowClass)) { return OPL_FALSE; }
 
-  return OPL_TRUE;
+  if(!RegisterClass(&window_class)) { return 0; }
+
+  s_opl_state.initialized = 1;
+
+  return 1;
 }
 
-void oplTerminate() {
-  if (!s_win32State.initialized) { return; }
+void opl_quit(void)
+{
+  if (!s_opl_state.initialized) { return; }
 
-  s_win32State.initialized = OPL_FALSE;
+  s_opl_state.initialized = 0;
 }
 
-void oplPumpMessages() {
+void opl_update(void)
+{
   MSG message;
   while(PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
     TranslateMessage(&message);
@@ -113,139 +124,146 @@ void oplPumpMessages() {
   }
 }
 
-const OplKeyboardState* oplKeyboardGetState() {
-  return &s_win32State.keyboardState;
+int opl_alert(
+  const char *title,
+  const char *text
+) {
+  opl_alert_ext(title, text, OPL_ALERT_STYLE_ERROR, 0, 0);
 }
 
-const OplMouseState* oplMouseGetState() {
-  return &s_win32State.mouseState;
+int opl_alert_ext(
+  const char      *title,
+  const char      *text,
+  opl_alert_style  style,
+  int              btn_count,
+  const char*     *btn_titles
+) { }
+
+opl_window opl_window_open(
+  int         width,
+  int         height,
+  const char *title
+) {
+  return opl_window_open_ext(
+    width,
+    height,
+    title,
+    0,
+    0,
+    OPL_WINDOW_HINT_TITLED_BIT         |
+    OPL_WINDOW_HINT_CLOSABLE_BIT       |
+    OPL_WINDOW_HINT_MINIATURIZABLE_BIT
+  );
 }
 
-opl_window oplWindowCreate(const OplWindowCreateInfo *createInfo) {
-  opl_window *window = oplAlloc(sizeof(opl_window));
-  window->should_close = OPL_FALSE;
-
-  #warning "Not all OplWindowStyleFlag flags are used."
+opl_window opl_window_open_ext(
+  int              width,
+  int              height,
+  const char      *title,
+  int              x,
+  int              y,
+  opl_window_hint  hints
+) {
+  struct opl_window *window = malloc(sizeof(struct opl_window));
+  window->should_close = 0;
 
   // Window style
-  DWORD windowStyle = WS_OVERLAPPED | WS_SYSMENU | WS_THICKFRAME;
-  if (createInfo->styleFlags & OPL_WINDOW_STYLE_RESIZABLE) {
-    windowStyle |= WS_MAXIMIZEBOX;
-  }
-  if (createInfo->styleFlags & OPL_WINDOW_STYLE_MINIATURIZABLE) {
-    windowStyle |= WS_MINIMIZEBOX;
-  }
+  DWORD window_style = WS_OVERLAPPED | WS_SYSMENU | WS_THICKFRAME;
+
+  if (hints & OPL_WINDOW_HINT_RESIZABLE_BIT)
+    window_style |= WS_MAXIMIZEBOX;
+
+  if (hints & OPL_WINDOW_HINT_MINIATURIZABLE_BIT)
+    window_style |= WS_MINIMIZEBOX;
 
   // Window style extended
-  DWORD windowStyleEx = WS_EX_APPWINDOW;
+  DWORD window_style_ex = WS_EX_APPWINDOW;
 
   // Calculating actual window size
-  RECT windowRect = { 0, 0, 0, 0 };
-  AdjustWindowRectEx(&windowRect, windowStyle, 0, windowStyleEx);
+  RECT rect = { 0, 0, 0, 0 };
+  AdjustWindowRectEx(&rect, window_style, 0, window_style_ex);
 
   window->window = CreateWindowEx(
-    windowStyleEx,
+    window_style_ex,
     WINDOW_CLASS_NAME,
-    createInfo->title,
-    windowStyle,
-    createInfo->x,
-    createInfo->y,
+    title,
+    window_style,
+    x,
+    y,
     // Grow by the size of the window frame border
-    createInfo->width + windowRect.right - windowRect.left,
-    createInfo->height + windowRect.bottom - windowRect.top,
+    width + rect.right - rect.left,
+    height + rect.bottom - rect.top,
     0,
     0,
-    s_win32State.hInstance,
+    s_opl_state.h_instance,
     0
   );
 
   if (!window->window) {
-    oplFree(window);
+    free(window);
     return 0;
   }
-  
+
   // Ad property to hold a pointer to OPL window handle
   SetProp(window->window, WINDOW_PROPERTY_NAME_OPL_WINDOW, window);
 
   // Showing window
-  int commandFlags = 
-    (createInfo->styleFlags * OPL_WINDOW_STYLE_FULLSCREEN) ?
-      SW_SHOWMAXIMIZED : SW_SHOW;
-  ShowWindow(window->window, commandFlags);
+  int cmd_flags =
+    (hints * OPL_WINDOW_HINT_FULLSCREEN_BIT) ? SW_SHOWMAXIMIZED : SW_SHOW;
+  ShowWindow(window->window, cmd_flags);
 
   return window;
 }
 
-void oplWindowDestroy(opl_window window) {
-  const opl_window *win32Window = (opl_window*)window;
-  DestroyWindow(win32Window->window);
-  oplFree(window);
+void opl_window_close(struct opl_window *window)
+{
+  DestroyWindow(window->window);
+  free(window);
 }
 
-uint8_t oplWindowShouldClose(opl_window window) {
-  return ((opl_window*)window)->should_close;
+int opl_window_should_close(struct opl_window *window)
+{
+  return window->should_close;
 }
 
-void oplWindowSetTitle(opl_window window, const char *title) {
-  #warning "oplWindowSetTitle() not implemented."
-}
+void opl_window_set_title(
+  struct opl_window *window,
+  const char        *title
+) { }
 
-const char* oplWindowGetTitle(opl_window window) {
-  #warning "oplWindowGetTitle() not implemented.";
-}
+const char* opl_window_get_title(struct opl_window *window) { }
 
-void oplWindowSetSize(opl_window window, uint16_t width, uint16_t height) {
-  #warning "oplWindowSetSize() not implemented.";
-}
+void opl_window_set_size(
+  struct opl_window *window,
+  int                width,
+  int                height
+) { }
 
-void oplWindowGetSize(opl_window window, uint16_t *width, uint16_t *height) {
-  #warning "oplWindowGetSize() not implemented.";
-}
+opl_size opl_window_get_size(struct opl_window *window) { }
 
-void oplWindowSetPosition(opl_window window, uint16_t x, uint16_t y) {
-  #warning "oplWindowSetPosition() not implemented.";
-}
+void opl_window_set_pos(
+  struct opl_window *window,
+  int                x,
+  int                y
+) { }
 
-void oplWindowGetPosition(opl_window window, uint16_t *x, uint16_t *y) {
-  #warning "oplWindowGetPosition() not implemented.";
-}
+opl_pos opl_window_get_pos(struct opl_window *window) { }
 
-void oplWindowMiniaturize(opl_window window) {
-  #warning "oplWindowMiniaturize() not implemented.";
-}
+void opl_hide(struct opl_window *window) { }
 
-uint8_t oplWindowIsMinituarized(opl_window window) {
-  #warning "oplWindowIsMinituarized() not implemented.";
-}
+int opl_is_hidden(struct opl_window *window) { }
 
-void oplWindowMaximize(opl_window window) {
-  #warning "oplWindowMaximize() not implemented.";
-}
+void opl_show(struct opl_window *window) { }
 
-uint8_t oplWindowIsMaximized(opl_window window) {
-  #warning "oplWindowIsMaximized() not implemented.";
-}
+int opl_is_shown(struct opl_window *window) { }
 
-void oplWindowToggleFullscreen(opl_window window) {
-  #warning "oplWindowToggleFullscreen() not implented.";
-}
+void opl_toggle_fullscreen(struct opl_window *window) { }
 
-uint8_t oplWindowIsFullscreen(opl_window window) {
-  #warning "oplWindowIsFullscreen() not implemented.";
-}
+int opl_is_fullscreen(struct opl_window *window) { }
 
-void oplConsoleWrite(const char *message, OplColor color) {
-  // Saving a handle to console
-  const HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-
-  // NORMAL, TRACE, INFO, WARN, ERROR, FATAL
-  static const uint8_t colors[] = { 0, 8, 1, 2, 6, 64 };
-  SetConsoleTextAttribute(consoleHandle, colors[color]);
-
-  uint64_t length = strlen(message);
-  DWORD numberWritten = 0;
-  WriteConsole(consoleHandle, message, length, &numberWritten, 0);
-  OutputDebugString(message);
+const opl_input_state* opl_get_input_state(void)
+{
+  return &s_opl_state.input_state;
 }
 
 VkResult opl_vk_surface_create(
@@ -254,20 +272,18 @@ VkResult opl_vk_surface_create(
   const VkAllocationCallbacks *allocator,
   VkSurfaceKHR                *surface
 ) {
-
   VkWin32SurfaceCreateInfoKHR info = {
     .sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
     .pNext = 0,
     .flags = 0,
-    .hinstance = s_win32State.hInstance,
-    .hwnd = ((opl_window*)window)->window,
+    .hinstance = s_opl_state.h_instance,
+    .hwnd = window->window,
   };
 
-  return vkCreateWin32SurfaceKHR(instance, &info,
-                                 allocator, surface);
+  return vkCreateWin32SurfaceKHR(instance, &info, allocator, surface);
 }
 
-void oplGetDeviceExtensions(
+void opl_vk_device_extensions(
   uint16_t *extensionsCount, const char* *extensionNames) {
   if (extensionNames) {
     extensionNames[0] = "VK_EXT_win32_surface";
