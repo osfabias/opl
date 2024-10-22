@@ -414,8 +414,11 @@ void opl_update(void)
   } // autoreleasepool
 }
 
-opl_window_t opl_window_open(int width, int height, const char *title)
-{
+opl_window opl_window_open(
+  int         width,
+  int         height,
+  const char *title
+) {
   return opl_window_open_ext(
     width,
     height,
@@ -428,9 +431,14 @@ opl_window_t opl_window_open(int width, int height, const char *title)
   );
 }
 
-opl_window_t opl_window_open_ext(int width, int height,
-                                 const char *title, int x, int y,opl_window_hint_t hints)
-{
+opl_window opl_window_open_ext(
+  int              width,
+  int              height,
+  const char      *title,
+  int              x,
+  int              y,
+  opl_window_hint  hints
+) {
   struct opl_window *window = malloc(sizeof(struct opl_window));
   window->should_close = 0;
 

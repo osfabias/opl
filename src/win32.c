@@ -4,19 +4,17 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_win32.h>
 
-#include "opl/opl.h"
+#include "opl.h"
 
-#define WINDOW_CLASS_NAME "OPL window class"
-#define WINDOW_PROPERTY_NAME_OPL_WINDOW "OPL window handle"
+#define WINDOW_CLASS_NAME               "opl window class"
+#define WINDOW_PROPERTY_NAME_OPL_WINDOW "opl window handle"
 
-typedef struct _OplWin32Window {
-  LONG shouldClose;
+struct opl_window {
+  LONG should_close;
   HWND window;
-} _OplWin32Window;
+};
 
 static struct {
-  uint8_t initialized;
-
   HMODULE hInstance;
   WNDCLASSA windowClass;
 
@@ -31,8 +29,8 @@ LRESULT CALLBACK windowProcessMessage(
       // Notify the OS that erasing will be handled by the application
       return 1;
     case WM_CLOSE:
-      _OplWin32Window *window = GetProp(hWnd, WINDOW_PROPERTY_NAME_OPL_WINDOW);
-      window->shouldClose = OPL_TRUE;
+      opl_window *window = GetProp(hWnd, WINDOW_PROPERTY_NAME_OPL_WINDOW);
+      window->should_close = OPL_TRUE;
       break;
     case WM_SIZE:
       break;
@@ -123,9 +121,9 @@ const OplMouseState* oplMouseGetState() {
   return &s_win32State.mouseState;
 }
 
-OplWindow oplWindowCreate(const OplWindowCreateInfo *createInfo) {
-  _OplWin32Window *window = oplAlloc(sizeof(_OplWin32Window));
-  window->shouldClose = OPL_FALSE;
+opl_window oplWindowCreate(const OplWindowCreateInfo *createInfo) {
+  opl_window *window = oplAlloc(sizeof(opl_window));
+  window->should_close = OPL_FALSE;
 
   #warning "Not all OplWindowStyleFlag flags are used."
 
@@ -178,61 +176,61 @@ OplWindow oplWindowCreate(const OplWindowCreateInfo *createInfo) {
   return window;
 }
 
-void oplWindowDestroy(OplWindow window) {
-  const _OplWin32Window *win32Window = (_OplWin32Window*)window;
+void oplWindowDestroy(opl_window window) {
+  const opl_window *win32Window = (opl_window*)window;
   DestroyWindow(win32Window->window);
   oplFree(window);
 }
 
-uint8_t oplWindowShouldClose(OplWindow window) {
-  return ((_OplWin32Window*)window)->shouldClose;
+uint8_t oplWindowShouldClose(opl_window window) {
+  return ((opl_window*)window)->should_close;
 }
 
-void oplWindowSetTitle(OplWindow window, const char *title) {
+void oplWindowSetTitle(opl_window window, const char *title) {
   #warning "oplWindowSetTitle() not implemented."
 }
 
-const char* oplWindowGetTitle(OplWindow window) {
+const char* oplWindowGetTitle(opl_window window) {
   #warning "oplWindowGetTitle() not implemented.";
 }
 
-void oplWindowSetSize(OplWindow window, uint16_t width, uint16_t height) {
+void oplWindowSetSize(opl_window window, uint16_t width, uint16_t height) {
   #warning "oplWindowSetSize() not implemented.";
 }
 
-void oplWindowGetSize(OplWindow window, uint16_t *width, uint16_t *height) {
+void oplWindowGetSize(opl_window window, uint16_t *width, uint16_t *height) {
   #warning "oplWindowGetSize() not implemented.";
 }
 
-void oplWindowSetPosition(OplWindow window, uint16_t x, uint16_t y) {
+void oplWindowSetPosition(opl_window window, uint16_t x, uint16_t y) {
   #warning "oplWindowSetPosition() not implemented.";
 }
 
-void oplWindowGetPosition(OplWindow window, uint16_t *x, uint16_t *y) {
+void oplWindowGetPosition(opl_window window, uint16_t *x, uint16_t *y) {
   #warning "oplWindowGetPosition() not implemented.";
 }
 
-void oplWindowMiniaturize(OplWindow window) {
+void oplWindowMiniaturize(opl_window window) {
   #warning "oplWindowMiniaturize() not implemented.";
 }
 
-uint8_t oplWindowIsMinituarized(OplWindow window) {
+uint8_t oplWindowIsMinituarized(opl_window window) {
   #warning "oplWindowIsMinituarized() not implemented.";
 }
 
-void oplWindowMaximize(OplWindow window) {
+void oplWindowMaximize(opl_window window) {
   #warning "oplWindowMaximize() not implemented.";
 }
 
-uint8_t oplWindowIsMaximized(OplWindow window) {
+uint8_t oplWindowIsMaximized(opl_window window) {
   #warning "oplWindowIsMaximized() not implemented.";
 }
 
-void oplWindowToggleFullscreen(OplWindow window) {
+void oplWindowToggleFullscreen(opl_window window) {
   #warning "oplWindowToggleFullscreen() not implented.";
 }
 
-uint8_t oplWindowIsFullscreen(OplWindow window) {
+uint8_t oplWindowIsFullscreen(opl_window window) {
   #warning "oplWindowIsFullscreen() not implemented.";
 }
 
@@ -250,17 +248,19 @@ void oplConsoleWrite(const char *message, OplColor color) {
   OutputDebugString(message);
 }
 
-VkResult oplCreateSurface(
-  OplWindow window, VkInstance instance,
+VkResult opl_vk_surface_create(
+  opl_window                  window,
+  VkInstance                  instance,
   const VkAllocationCallbacks *allocator,
-  VkSurfaceKHR *surface) {
+  VkSurfaceKHR                *surface
+) {
 
   VkWin32SurfaceCreateInfoKHR info = {
     .sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
     .pNext = 0,
     .flags = 0,
     .hinstance = s_win32State.hInstance,
-    .hwnd = ((_OplWin32Window*)window)->window,
+    .hwnd = ((opl_window*)window)->window,
   };
 
   return vkCreateWin32SurfaceKHR(instance, &info,

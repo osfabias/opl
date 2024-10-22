@@ -35,12 +35,28 @@ typedef enum opl_window_hint {
   OPL_WINDOW_HINT_BORDERLESS_BIT     = 1 << 3,
   OPL_WINDOW_HINT_FULLSCREEN_BIT     = 1 << 4,
   OPL_WINDOW_HINT_MINIATURIZABLE_BIT = 1 << 5,
-} opl_window_hint_t;
+} opl_window_hint;
 
 /**
  * @brief An opl window handle.
  */
-typedef struct opl_window* opl_window_t;
+typedef struct opl_window* opl_window;
+
+/**
+ * @brief Size.
+ */
+typedef struct opl_size {
+  int width;
+  int height;
+} opl_size;
+
+/**
+ * @brief Position.
+ */
+typedef struct opl_pos {
+  int x;
+  int y;
+} opl_pos;
 
 /**
  * @brief Alert type.
@@ -49,7 +65,7 @@ typedef enum opl_alert_style {
   OPL_ALERT_STYLE_INFO,
   OPL_ALERT_STYLE_WARN,
   OPL_ALERT_STYLE_ERROR,
-} opl_alert_style_t;
+} opl_alert_style;
 
 /**
  * @brief Virtual key codes.
@@ -209,7 +225,7 @@ typedef enum opl_key {
   OPL_KEY_RBRACKET  = 0xDD,
 
   OPL_KEY_MAX_ENUM = 0xFF
-} opl_key_t;
+} opl_key;
 
 /**
  * @brief Mouse button codes.
@@ -220,7 +236,7 @@ typedef enum opl_btn {
   OPL_BTN_MIDDLE,
 
   OPL_BTN_MAX_ENUM
-} opl_btn_t;
+} opl_btn;
 
 /**
  * @brief Input state.
@@ -251,12 +267,14 @@ typedef struct opl_input_state {
   int  x;
   int  y;
   int  wheel;
-} opl_input_state_t;
+} opl_input_state;
 
 /**
  * @brief Initializes opl.
- * 
- * This function should be called before any other opl functions.
+ *
+ * This function should be called before any other opl functions. If
+ * this function is called when opl is already initialized, function
+ * will immediately return 1.
  *
  * @return Return 1 on success, otherwise returns 0.
  */
@@ -284,7 +302,7 @@ void opl_update(void);
  *
  * @return Returns opl window instance on success, otherwise returns 0.
  */
-opl_window_t opl_window_open(
+opl_window opl_window_open(
   int         width,
   int         height,
   const char *title
@@ -302,13 +320,13 @@ opl_window_t opl_window_open(
  *
  * @return Returns opl window instance on success, otherwise returns 0.
  */
-opl_window_t opl_window_open_ext(
-  int                width,
-  int                height,
-  const char        *title,
-  int                x,
-  int                y,
-  opl_window_hint_t  hints
+opl_window opl_window_open_ext(
+  int              width,
+  int              height,
+  const char      *title,
+  int              x,
+  int              y,
+  opl_window_hint  hints
 );
 
 /**
@@ -316,7 +334,7 @@ opl_window_t opl_window_open_ext(
  *
  * @param window An opl window handle.
  */
-void opl_window_close(opl_window_t window);
+void opl_window_close(opl_window window);
 
 /**
  * @brief Returns whether should window close or not.
@@ -325,7 +343,7 @@ void opl_window_close(opl_window_t window);
  *
  * @return Returns 1 if OS requested window closing, otherwise returns 0.
  */
-int opl_window_should_close(opl_window_t window);
+int opl_window_should_close(opl_window window);
 
 /**
  * @brief Sets window's title.
@@ -333,7 +351,10 @@ int opl_window_should_close(opl_window_t window);
  * @param window An opl window handle.
  * @param title  New window title.
  */
-void opl_window_set_title(opl_window_t window, const char *title);
+void opl_window_set_title(
+  opl_window  window,
+  const char *title
+);
 
 /**
  * @brief Returns window's title.
@@ -343,27 +364,29 @@ void opl_window_set_title(opl_window_t window, const char *title);
  * @return Returns a pointer to the window's title. Returned pointer
  *         shouldn't be freed by user.
  */
-const char* opl_window_get_title(opl_window_t window);
+const char* opl_window_get_title(opl_window window);
 
 /**
  * @brief Sets window's size.
  *
  * @param window An opl window handle.
- * @param width  A width in pixels.
- * @param height A height in pixels.
+ * @param width  The width in pixels.
+ * @param height The height in pixels.
  */
-void opl_window_set_size(opl_window_t window, int width, int height);
+void opl_window_set_size(
+  opl_window window,
+  int        width,
+  int        height
+);
 
 /**
  * @brief Returns window size.
  *
  * @param window An opl window handle.
- * @param width  A pointer to a variable, that will hold the window 
- *               width.
- * @param width  A pointer to a variable, that will hold the window 
- *               height.
+ *
+ * @returns Returns the size of the window.
  */
-void opl_window_get_size(opl_window_t window, int *width, int *height);
+opl_size opl_window_get_size(opl_window window);
 
 /**
  * @brief Sets window position.
@@ -372,25 +395,27 @@ void opl_window_get_size(opl_window_t window, int *width, int *height);
  * @param x      The new x position of the window.
  * @param y      The new y position of the window.
  */
-void opl_window_set_pos(opl_window_t window, int x, int y);
+void opl_window_set_pos(
+  opl_window window,
+  int        x,
+  int        y
+);
 
 /**
  * @brief Returns a window position.
  *
  * @param window An opl window handle.
- * @param x      A pointer to a variable, that will hold the window x 
- *               position on the display.
- * @param y      A pointer to a variable, that will hold the window y 
- *               position on the display.
+ *
+ * @return Returns the structure that hold current window position.
  */
-void opl_window_get_pos(opl_window_t window, int *x, int *y);
+opl_pos opl_window_get_pos(opl_window  window);
 
 /**
  * @brief Hides window.
  *
  * @param window An opl window handle.
  */
-void opl_hide(opl_window_t window);
+void opl_hide(opl_window window);
 
 /**
  * @brief Returns whether the window is miniaturized or not.
@@ -399,14 +424,14 @@ void opl_hide(opl_window_t window);
  *
  * @return Returns 1 if window miniaturized or 0 if it's not.
  */
-int opl_is_hidden(opl_window_t window);
+int opl_is_hidden(opl_window window);
 
 /**
  * @brief Shows window.
  *
  * @param window An opl window handle.
  */
-void opl_show(opl_window_t window);
+void opl_show(opl_window window);
 
 /**
  * @brief Returns whether a window is maximized or not.
@@ -415,14 +440,14 @@ void opl_show(opl_window_t window);
  *
  * @return Returns 1 if window maximized or 0 if it's not.
  */
-int opl_is_shown(opl_window_t window);
+int opl_is_shown(opl_window window);
 
 /**
  * @brief Toggles fullscreen mode for a window.
  *
  * @param window An opl window handle.
  */
-void opl_toggle_fullscreen(opl_window_t window);
+void opl_toggle_fullscreen(opl_window window);
 
 /**
  * @brief Returns whether a window in fullscreen mode or not.
@@ -431,7 +456,7 @@ void opl_toggle_fullscreen(opl_window_t window);
  *
  * @return Returns 1 if window in fullscreen mode or 0 if it's not.
  */
-int opl_is_fullscreen(opl_window_t window);
+int opl_is_fullscreen(opl_window window);
 
 /**
  * @brief Shows an alert window.
@@ -449,11 +474,11 @@ int opl_is_fullscreen(opl_window_t window);
  *         were passed will always return 0.
  */
 int opl_alert_ext(
-  const char       *title,
-  const char       *text,
-  opl_alert_style_t style,
-  int               btn_count,
-  const char*      *btn_titles
+  const char      *title,
+  const char      *text,
+  opl_alert_style  style,
+  int              btn_count,
+  const char*     *btn_titles
 );
 
 /**
@@ -464,15 +489,17 @@ int opl_alert_ext(
  * @param title Title of the alert window.
  * @param text  Text of the the alert window.
  */
-#define opl_alert(title, text) \
-  opl_alert_ext(title, text, OPL_ALERT_STYLE_ERROR, 0, 0);
+int opl_alert(
+  const char *title,
+  const char *text
+);
 
 /**
  * @brief Returns a pointer to an input state.
  *
  * @returns A pointer to the platform input state.
  */
-const opl_input_state_t* opl_get_input_state(void);
+const opl_input_state* opl_get_input_state(void);
 
 #ifdef OPL_INCLUDE_VULKAN
 #include <vulkan/vulkan.h>
@@ -481,9 +508,10 @@ const opl_input_state_t* opl_get_input_state(void);
  * @brief Creates Vulkan surface.
  */
 VkResult opl_vk_surface_create(
-  opl_window_t window, VkInstance instance,
+  opl_window                   window,
+  VkInstance                   instance,
   const VkAllocationCallbacks *allocator,
-  VkSurfaceKHR *surface
+  VkSurfaceKHR                *surface
 );
 
 /**
@@ -492,6 +520,9 @@ VkResult opl_vk_surface_create(
  *
  * User shouldn't free returned array.
  */
-void opl_vk_device_extensions(int *count, const char* *names);
+void opl_vk_device_extensions(
+  int         *count,
+  const char* *names
+);
 #endif
 
