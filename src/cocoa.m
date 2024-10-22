@@ -24,10 +24,10 @@ struct opl_window {
 
 struct {
   ApplicationDelegate *app_delegate;
-  opl_input_state_t    input_state;
+  opl_input_state      input_state;
 } s_opl_state;
 
-static opl_key_t _translate_key(uint32_t keycode) {
+static opl_key _translate_key(uint32_t keycode) {
   // https://boredzo.org/blog/wp-content/uploads/2007/05/IMTx-virtual-keycodes.pdf
   // https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
   switch (keycode) {
@@ -270,14 +270,14 @@ static opl_key_t _translate_key(uint32_t keycode) {
 }
 
 - (void)keyDown:(NSEvent *)event {
-  opl_key_t key = _translate_key((uint32_t)[event keyCode]);
+  opl_key key = _translate_key((uint32_t)[event keyCode]);
   s_opl_state.input_state.keys[key] = 1;
 
   // [self interpretKeyEvents:@[event]];
 }
 
 - (void)keyUp:(NSEvent *)event {
-  opl_key_t key = _translate_key((uint32_t)[event keyCode]);
+  opl_key key = _translate_key((uint32_t)[event keyCode]);
   s_opl_state.input_state.keys[key] = 0;
 }
 
@@ -367,15 +367,13 @@ int opl_init(void)
 
   // App delegate creation
   s_opl_state.app_delegate = [[ApplicationDelegate alloc] init];
-  if (!s_opl_state.app_delegate) {
+  if (!s_opl_state.app_delegate)
     return false;
-  }
   [NSApp setDelegate:s_opl_state.app_delegate];
 
   // Starting application
-  if (![[NSRunningApplication currentApplication] isFinishedLaunching]) {
+  if (![[NSRunningApplication currentApplication] isFinishedLaunching])
     [NSApp run];
-  }
 
   // Making the app a proper UI app since we're unbundled
   [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
@@ -451,21 +449,20 @@ opl_window opl_window_open_ext(
 
   // Window creation
   NSWindowStyleMask styleMask = 0;
-  if (hints & OPL_WINDOW_HINT_TITLED_BIT) {
+  if (hints & OPL_WINDOW_HINT_TITLED_BIT)
     styleMask |= NSWindowStyleMaskTitled;
-  }
-  if (hints & OPL_WINDOW_HINT_CLOSABLE_BIT) {
+
+  if (hints & OPL_WINDOW_HINT_CLOSABLE_BIT)
     styleMask |= NSWindowStyleMaskClosable;
-  }
-  if (hints & OPL_WINDOW_HINT_RESIZABLE_BIT) {
+
+  if (hints & OPL_WINDOW_HINT_RESIZABLE_BIT)
     styleMask |= NSWindowStyleMaskResizable;
-  }
-  if (hints & OPL_WINDOW_HINT_BORDERLESS_BIT) {
+
+  if (hints & OPL_WINDOW_HINT_BORDERLESS_BIT)
     styleMask |= NSWindowStyleMaskBorderless;
-  }
-  if (hints & OPL_WINDOW_HINT_MINIATURIZABLE_BIT) {
+
+  if (hints & OPL_WINDOW_HINT_MINIATURIZABLE_BIT)
     styleMask |= NSWindowStyleMaskMiniaturizable;
-  }
 
   window->window = [[NSWindow alloc]
       initWithContentRect:NSMakeRect(
@@ -554,14 +551,23 @@ int opl_window_should_close(struct opl_window *window)
   return window->should_close;
 }
 
-const opl_input_state_t* opl_get_input_state(void) {
+const opl_input_state* opl_get_input_state(void)
+{
   return &s_opl_state.input_state;
 }
 
-int opl_alert_ext(const char *title, const char *text, 
-                  opl_alert_style_t style, int btn_count,
-                  const char* *btn_texts)
+int opl_alert(const char *title, const char *text)
 {
+  return opl_alert_ext(title, text, OPL_ALERT_STYLE_ERROR, 0, NULL);
+}
+
+int opl_alert_ext(
+  const char      *title,
+  const char      *text, 
+  opl_alert_style  style,
+  int              btn_count,
+  const char*     *btn_texts
+) {
   NSAlert *alert = [[NSAlert alloc] init];
 
   switch (style) {
@@ -585,9 +591,8 @@ int opl_alert_ext(const char *title, const char *text,
                                              encoding:NSASCIIStringEncoding];
 
   for (int i = 0; i < btn_count; ++i) {
-    [alert
-        addButtonWithTitle:[NSString stringWithCString:btn_texts[i]
-                                              encoding:NSASCIIStringEncoding]];
+    [alert addButtonWithTitle:[NSString stringWithCString:btn_texts[i]
+                                                 encoding:NSASCIIStringEncoding]];
   }
 
   int response = (long)[alert runModal] - 1000;
@@ -595,11 +600,13 @@ int opl_alert_ext(const char *title, const char *text,
 
   // When user provides custom buttons the response
   // returns a button index + 1000
-  return btn_count ? response : 1;
+  return btn_count > 0 ? response : 1;
 }
 
-void opl_window_set_title(struct opl_window *window, const char *title)
-{
+void opl_window_set_title(
+  struct opl_window *window,
+  const char        *title
+) {
   [window->window setTitle:@(title)];
 }
 
@@ -608,9 +615,11 @@ const char* opl_window_get_title(struct opl_window *window)
   return [window->window.title cStringUsingEncoding:NSASCIIStringEncoding];
 }
 
-void opl_window_set_size(struct opl_window *window,
-                         int width, int height)
-{
+void opl_window_set_size(
+  struct opl_window *window,
+  int width,
+  int height
+) {
   const NSWindow *nsWindow = window->window;
   const uint16_t topBarHeight =
       nsWindow.frame.size.height -
@@ -626,18 +635,19 @@ void opl_window_set_size(struct opl_window *window,
              animate:YES];
 }
 
-void opl_window_get_size(struct opl_window *window,
-                         int *width, int *height)
+opl_size opl_window_get_size(struct opl_window *window)
 {
   const NSWindow *nsWindow = window->window;
   const NSSize size = [nsWindow contentRectForFrameRect:nsWindow.frame].size;
 
-  *width  = (uint16_t)size.width;
-  *height = (uint16_t)size.height;
+  return (opl_size){ size.width, size.height };
 }
 
-void opl_window_set_pos(struct opl_window *window, int x, int y)
-{
+void opl_window_set_pos(
+  struct opl_window *window,
+  int                x,
+  int                y
+) {
   const NSWindow *nsWindow = window->window;
 
   [nsWindow setFrame:NSMakeRect(
@@ -650,14 +660,17 @@ void opl_window_set_pos(struct opl_window *window, int x, int y)
              animate:YES];
 }
 
-void opl_window_get_pos(struct opl_window *window, int *x, int *y)
+opl_pos opl_window_get_pos(struct opl_window *window)
 {
   // Need to invert Y on macOS, since origin is bottom-left.
   const NSWindow *nsWindow = window->window;
-  *x = nsWindow.frame.origin.x;
-  *y = NSScreen.mainScreen.frame.size.height -
-       nsWindow.frame.size.height -
-       nsWindow.frame.origin.y;
+
+  return (opl_pos) {
+    nsWindow.frame.origin.x,
+    NSScreen.mainScreen.frame.size.height -
+      nsWindow.frame.size.height -
+      nsWindow.frame.origin.y
+  };
 }
 
 void opl_hide(struct opl_window *window)
@@ -691,22 +704,25 @@ int opl_is_fullscreen(struct opl_window *window)
 }
 
 VkResult opl_vk_surface_create(
-  struct opl_window *window, VkInstance instance,
-  const VkAllocationCallbacks *allocator, VkSurfaceKHR *surface)
-{
+  struct opl_window           *window,
+  VkInstance                   instance,
+  const VkAllocationCallbacks *allocator,
+  VkSurfaceKHR                *surface
+) {
   const VkMetalSurfaceCreateInfoEXT info = {
       .sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT,
       .pNext = NULL,
       .flags = 0,
-
       .pLayer = window->metal_layer,
   };
 
   return vkCreateMetalSurfaceEXT(instance, &info, allocator, surface);
 }
 
-void opl_vk_device_extensions(int *count, const char **names)
-{
+void opl_vk_device_extensions(
+  int         *count,
+  const char **names
+) {
   if (!names) {
     *count = 2;
     return;
