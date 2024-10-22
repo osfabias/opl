@@ -23,9 +23,10 @@ struct opl_window {
 };
 
 struct {
+  int                  initialized;
   ApplicationDelegate *app_delegate;
   opl_input_state      input_state;
-} s_opl_state;
+} s_opl_state = { .initialized = 0 };
 
 static opl_key _translate_key(uint32_t keycode) {
   // https://boredzo.org/blog/wp-content/uploads/2007/05/IMTx-virtual-keycodes.pdf
@@ -362,13 +363,15 @@ static const NSRange kEmptyRange = {NSNotFound, 0};
 
 int opl_init(void)
 {
+  if (s_opl_state.initialized) { return 1; }
+
   // I don't know what this line stands for (o_O)
   [NSApplication sharedApplication];
 
   // App delegate creation
   s_opl_state.app_delegate = [[ApplicationDelegate alloc] init];
   if (!s_opl_state.app_delegate)
-    return false;
+    return 0;
   [NSApp setDelegate:s_opl_state.app_delegate];
 
   // Starting application
@@ -384,13 +387,19 @@ int opl_init(void)
   // Make all windows created appear on top of others
   [[NSRunningApplication currentApplication] activateWithOptions:0];
 
-  return true;
+  s_opl_state.initialized = 1;
+
+  return 1;
 }
 
 void opl_quit(void)
 {
+  if (!s_opl_state.initialized) { return; }
+
   [NSApp setDelegate:nil];
   [s_opl_state.app_delegate release];
+
+  s_opl_state.initialized = 0;
 }
 
 void opl_update(void)
