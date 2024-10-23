@@ -7,6 +7,8 @@
  */
 #pragma once
 
+#define OPL_CENTER -1
+
 /**
  * @brief Window style flags.
  *
@@ -32,9 +34,8 @@ typedef enum opl_window_hint {
   OPL_WINDOW_HINT_TITLED_BIT         = 1 << 0,
   OPL_WINDOW_HINT_CLOSABLE_BIT       = 1 << 1,
   OPL_WINDOW_HINT_RESIZABLE_BIT      = 1 << 2,
-  OPL_WINDOW_HINT_BORDERLESS_BIT     = 1 << 3,
-  OPL_WINDOW_HINT_FULLSCREEN_BIT     = 1 << 4,
-  OPL_WINDOW_HINT_MINIATURIZABLE_BIT = 1 << 5,
+  OPL_WINDOW_HINT_FULLSCREEN_BIT     = 1 << 3,
+  OPL_WINDOW_HINT_MINIATURIZABLE_BIT = 1 << 4,
 } opl_window_hint;
 
 /**
@@ -299,28 +300,13 @@ void opl_update(void);
  * @param width  The width of the window in pixels.
  * @param height The height of the window in pixels.
  * @param titlte The title of the window.
- *
- * @return Returns opl window instance on success, otherwise returns 0.
- */
-opl_window opl_window_open(
-  int         width,
-  int         height,
-  const char *title
-);
-
-/**
- * @brief Opens window.
- *
- * @param width  The width of the window in pixels.
- * @param height The height of the window in pixels.
- * @param titlte The title of the window.
  * @param x      The x position of the window in pixels.
  * @param y      The y position of the window in pixels.
  * @param hints  Creation hints.
  *
  * @return Returns opl window instance on success, otherwise returns 0.
  */
-opl_window opl_window_open_ext(
+opl_window opl_open(
   int              width,
   int              height,
   const char      *title,
@@ -334,7 +320,7 @@ opl_window opl_window_open_ext(
  *
  * @param window An opl window handle.
  */
-void opl_window_close(opl_window window);
+void opl_close(opl_window window);
 
 /**
  * @brief Returns whether should window close or not.
@@ -343,7 +329,7 @@ void opl_window_close(opl_window window);
  *
  * @return Returns 1 if OS requested window closing, otherwise returns 0.
  */
-int opl_window_should_close(opl_window window);
+int opl_should_close(opl_window window);
 
 /**
  * @brief Sets window's title.
@@ -351,7 +337,7 @@ int opl_window_should_close(opl_window window);
  * @param window An opl window handle.
  * @param title  New window title.
  */
-void opl_window_set_title(
+void opl_set_title(
   opl_window  window,
   const char *title
 );
@@ -364,7 +350,7 @@ void opl_window_set_title(
  * @return Returns a pointer to the window's title. Returned pointer
  *         shouldn't be freed by user.
  */
-const char* opl_window_get_title(opl_window window);
+const char* opl_get_title(opl_window window);
 
 /**
  * @brief Sets window's size.
@@ -373,7 +359,7 @@ const char* opl_window_get_title(opl_window window);
  * @param width  The width in pixels.
  * @param height The height in pixels.
  */
-void opl_window_set_size(
+void opl_set_size(
   opl_window window,
   int        width,
   int        height
@@ -386,7 +372,7 @@ void opl_window_set_size(
  *
  * @returns Returns the size of the window.
  */
-opl_size opl_window_get_size(opl_window window);
+opl_size opl_get_size(opl_window window);
 
 /**
  * @brief Sets window position.
@@ -395,7 +381,7 @@ opl_size opl_window_get_size(opl_window window);
  * @param x      The new x position of the window.
  * @param y      The new y position of the window.
  */
-void opl_window_set_pos(
+void opl_set_pos(
   opl_window window,
   int        x,
   int        y
@@ -408,7 +394,7 @@ void opl_window_set_pos(
  *
  * @return Returns the structure that hold current window position.
  */
-opl_pos opl_window_get_pos(opl_window  window);
+opl_pos opl_get_pos(opl_window  window);
 
 /**
  * @brief Hides window.
