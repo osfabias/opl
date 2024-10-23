@@ -5,13 +5,15 @@ int main() {
 
   opl_alert("Welcome!", "Thanks for using opl!");
 
-  opl_window window = opl_window_open(640, 360, "opl window");
+  opl_window window = opl_open(
+    640, 360, "opl window", OPL_CENTER, OPL_CENTER,
+    OPL_WINDOW_HINT_TITLED_BIT | OPL_WINDOW_HINT_CLOSABLE_BIT);
   if (!window) { return 1; }
 
-  while (!opl_window_should_close(window))
+  while (!opl_should_close(window))
     opl_update();
 
-  opl_window_close(window);
+  opl_close(window);
 
   opl_quit();
 

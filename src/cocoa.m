@@ -467,9 +467,6 @@ opl_window opl_window_open_ext(
   if (hints & OPL_WINDOW_HINT_RESIZABLE_BIT)
     styleMask |= NSWindowStyleMaskResizable;
 
-  if (hints & OPL_WINDOW_HINT_BORDERLESS_BIT)
-    styleMask |= NSWindowStyleMaskBorderless;
-
   if (hints & OPL_WINDOW_HINT_MINIATURIZABLE_BIT)
     styleMask |= NSWindowStyleMaskMiniaturizable;
 

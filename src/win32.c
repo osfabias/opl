@@ -124,39 +124,7 @@ void opl_update(void)
   }
 }
 
-int opl_alert(
-  const char *title,
-  const char *text
-) {
-  opl_alert_ext(title, text, OPL_ALERT_STYLE_ERROR, 0, 0);
-}
-
-int opl_alert_ext(
-  const char      *title,
-  const char      *text,
-  opl_alert_style  style,
-  int              btn_count,
-  const char*     *btn_titles
-) { }
-
-opl_window opl_window_open(
-  int         width,
-  int         height,
-  const char *title
-) {
-  return opl_window_open_ext(
-    width,
-    height,
-    title,
-    0,
-    0,
-    OPL_WINDOW_HINT_TITLED_BIT         |
-    OPL_WINDOW_HINT_CLOSABLE_BIT       |
-    OPL_WINDOW_HINT_MINIATURIZABLE_BIT
-  );
-}
-
-opl_window opl_window_open_ext(
+opl_window opl_open(
   int              width,
   int              height,
   const char      *title,
@@ -168,16 +136,19 @@ opl_window opl_window_open_ext(
   window->should_close = 0;
 
   // Window style
-  DWORD window_style = WS_OVERLAPPED | WS_SYSMENU | WS_THICKFRAME;
+  DWORD window_style = WS_SYSMENU;
+
+  if (!(hints & OPL_WINDOW_HINT_TITLED_BIT))
+    window_style |= WS_POPUP | WS_BORDER;
 
   if (hints & OPL_WINDOW_HINT_RESIZABLE_BIT)
-    window_style |= WS_MAXIMIZEBOX;
+    window_style |= WS_MAXIMIZEBOX | WS_SIZEBOX;
 
   if (hints & OPL_WINDOW_HINT_MINIATURIZABLE_BIT)
-    window_style |= WS_MINIMIZEBOX;
+    window_style |= WS_MINIMIZEBOX | WS_CAPTION;
 
   // Window style extended
-  DWORD window_style_ex = WS_EX_APPWINDOW;
+  DWORD window_style_ex = 0;
 
   // Calculating actual window size
   RECT rect = { 0, 0, 0, 0 };
@@ -188,8 +159,8 @@ opl_window opl_window_open_ext(
     WINDOW_CLASS_NAME,
     title,
     window_style,
-    x,
-    y,
+    x == OPL_CENTER ? CW_USEDEFAULT : x,
+    y == OPL_CENTER ? CW_USEDEFAULT : y,
     // Grow by the size of the window frame border
     width + rect.right - rect.left,
     height + rect.bottom - rect.top,
@@ -201,47 +172,51 @@ opl_window opl_window_open_ext(
 
   if (!window->window) {
     free(window);
-    return 0;
+    return NULL;
   }
+
+  if (!(hints & OPL_WINDOW_HINT_CLOSABLE_BIT))
+    EnableMenuItem(GetSystemMenu(window->window, FALSE), SC_CLOSE,
+                   MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 
   // Ad property to hold a pointer to OPL window handle
   SetProp(window->window, WINDOW_PROPERTY_NAME_OPL_WINDOW, window);
 
   // Showing window
   int cmd_flags =
-    (hints * OPL_WINDOW_HINT_FULLSCREEN_BIT) ? SW_SHOWMAXIMIZED : SW_SHOW;
+    (hints & OPL_WINDOW_HINT_FULLSCREEN_BIT) ? SW_SHOWMAXIMIZED : SW_SHOW;
   ShowWindow(window->window, cmd_flags);
 
   return window;
 }
 
-void opl_window_close(struct opl_window *window)
+void opl_close(struct opl_window *window)
 {
   DestroyWindow(window->window);
   free(window);
 }
 
-int opl_window_should_close(struct opl_window *window)
+int opl_should_close(struct opl_window *window)
 {
   return window->should_close;
 }
 
-void opl_window_set_title(
+void opl_set_title(
   struct opl_window *window,
   const char        *title
 ) { }
 
-const char* opl_window_get_title(struct opl_window *window) { }
+const char* opl_get_title(struct opl_window *window) { }
 
-void opl_window_set_size(
+void opl_set_size(
   struct opl_window *window,
   int                width,
   int                height
 ) { }
 
-opl_size opl_window_get_size(struct opl_window *window) { }
+opl_size opl_get_size(struct opl_window *window) { }
 
-void opl_window_set_pos(
+void opl_set_pos(
   struct opl_window *window,
   int                x,
   int                y
@@ -260,6 +235,24 @@ int opl_is_shown(struct opl_window *window) { }
 void opl_toggle_fullscreen(struct opl_window *window) { }
 
 int opl_is_fullscreen(struct opl_window *window) { }
+
+int opl_alert(
+  const char *title,
+  const char *text
+) {
+  opl_alert_ext(title, text, OPL_ALERT_STYLE_ERROR, 0, 0);
+}
+
+int opl_alert_ext(
+  const char      *title,
+  const char      *text,
+  opl_alert_style  style,
+  int              btn_count,
+  const char*     *btn_titles
+) {
+  return MessageBox(NULL, text, title, MB_OK);
+}
+
 
 const opl_input_state* opl_get_input_state(void)
 {
